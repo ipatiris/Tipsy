@@ -289,7 +289,7 @@ with tabs[2]:
                         controller.make_drink(CONFIG_FILE, selected_cocktail, single_or_double="single")
                     except Exception as e:
                         st.error(f"Error while pouring: {e}")
-
+                print(selected_cocktail)
             # Back to gallery
             if st.button("Back to Menu"):
                 st.session_state.selected_cocktail = None

@@ -2,6 +2,16 @@
 import os
 import pygame
 import time
+from button import Button
+import controller
+import json
+
+
+CONFIG_FILE = "pump_config.json"
+COCKTAILS_FILE = "cocktails.json"
+LOGO_FOLDER = "drink_logos"
+SELECTED_COCKTAIL = "selected_cocktail.txt"
+
 
 def animate_text_zoom(screen, base_text, position, start_size, target_size, duration=300, background=None, current_img=None, image_offset=0):
     """Animate overlay text zooming from a small size to target size."""
@@ -102,11 +112,12 @@ def animate_logo_click(screen, logo, rect, base_size, target_size, duration=150,
             break
         clock.tick(60)
 
-def animate_both_logos_zoom(screen, single_logo, double_logo, single_rect, double_rect, base_size, target_size, duration=300, background=None, current_img=None):
-    """Animate both logos zooming in together and then shrinking back."""
+def animate_both_logos_zoom(screen, single_logo, double_logo, settings_logo, single_rect, double_rect,settings_rect, base_size, target_size, duration=300, background=None, current_img=None):
+    """Animate single,double and settings logos zooming in together and then shrinking back."""
     clock = pygame.time.Clock()
     center_single = single_rect.center
     center_double = double_rect.center
+    center_settings = settings_rect.center
     # Expand
     start_time = pygame.time.get_ticks()
     while True:
@@ -115,14 +126,17 @@ def animate_both_logos_zoom(screen, single_logo, double_logo, single_rect, doubl
         current_size = int(base_size + (target_size - base_size) * progress)
         scaled_single = pygame.transform.scale(single_logo, (current_size, current_size))
         scaled_double = pygame.transform.scale(double_logo, (current_size, current_size))
+        scaled_settings = pygame.transform.scale(settings_logo, (current_size, current_size))
         new_rect_single = scaled_single.get_rect(center=center_single)
         new_rect_double = scaled_double.get_rect(center=center_double)
+        new_rect_settings = scaled_settings.get_rect(center=center_settings)
         if background:
             screen.blit(background, (0, 0))
         if current_img:
             screen.blit(current_img, (0, 0))
         screen.blit(scaled_single, new_rect_single)
         screen.blit(scaled_double, new_rect_double)
+        screen.blit(scaled_double, new_rect_settings)
         pygame.display.flip()
         if progress >= 1.0:
             break
@@ -135,14 +149,17 @@ def animate_both_logos_zoom(screen, single_logo, double_logo, single_rect, doubl
         current_size = int(target_size - (target_size - base_size) * progress)
         scaled_single = pygame.transform.scale(single_logo, (current_size, current_size))
         scaled_double = pygame.transform.scale(double_logo, (current_size, current_size))
+        scaled_settings = pygame.transform.scale(settings_logo, (current_size, current_size))
         new_rect_single = scaled_single.get_rect(center=center_single)
         new_rect_double = scaled_double.get_rect(center=center_double)
+        new_rect_settings = scaled_settings.get_rect(center=center_double)
         if background:
             screen.blit(background, (0, 0))
         if current_img:
             screen.blit(current_img, (0, 0))
         screen.blit(scaled_single, new_rect_single)
         screen.blit(scaled_double, new_rect_double)
+        screen.blit(scaled_double, new_rect_settings)
         pygame.display.flip()
         if progress >= 1.0:
             break
@@ -170,6 +187,96 @@ def show_pouring_and_loading(screen, pouring_img, loading_img, duration_sec, bac
         screen.blit(pouring_img, (0, 0))
         pygame.display.flip()
         clock.tick(60)
+
+# Settings pages below        
+def settings_interface():
+    pygame.init()
+    screen_settings = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+    screen_settings_size = screen_settings.get_size()
+    screen_settings_width, screen_settings_height = screen_settings_size
+    pygame.display.set_caption("Settings")
+
+    # Load the static background image (tipsy.png)
+    try:
+        background = pygame.image.load("./tipsy.png")
+        background = pygame.transform.scale(background, screen_settings_size)
+    except Exception as e:
+        print("Error loading background image (tipsy.png):", e)
+        background = None
+
+    while True:
+        screen_settings.blit(background, (0, 0))
+
+        MENU_MOUSE_POS = pygame.mouse.get_pos()
+        font_settings = pygame.font.SysFont(None, 72)
+
+        MENU_TEXT = font_settings.render("Settings", True, "#d7fcd4")
+        MENU_RECT = MENU_TEXT.get_rect(center=(1240, 400))
+
+        PRIME_PUMPS_BUTTON = Button(image=pygame.image.load("assets/Play Rect.png"), pos=(1240, 650), 
+                            text_input="Prime pumps", font=font_settings, base_color="#d7fcd4", hovering_color="White")
+        CLEAN_PUMPS_BUTTON = Button(image=pygame.image.load("assets/Options Rect.png"), pos=(1240, 800), 
+                            text_input="Clean pumps", font=font_settings, base_color="#d7fcd4", hovering_color="White")
+        BACK_BUTTON = Button(image=pygame.image.load("assets/Quit Rect.png"), pos=(1240, 950), 
+                            text_input="Back", font=font_settings, base_color="#d7fcd4", hovering_color="White")
+        QUIT_BUTTON = Button(image=pygame.image.load("assets/Quit Rect.png"), pos=(1240, 1100), 
+                            text_input="Quit", font=font_settings, base_color="#d7fcd4", hovering_color="White")
+
+        screen_settings.blit(MENU_TEXT, MENU_RECT)
+
+        for button in [PRIME_PUMPS_BUTTON, CLEAN_PUMPS_BUTTON, BACK_BUTTON, QUIT_BUTTON]:
+            button.changeColor(MENU_MOUSE_POS)
+            button.update(screen_settings)
+        
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if PRIME_PUMPS_BUTTON.checkForInput(MENU_MOUSE_POS):
+                    controller.prime_pumps()
+                if CLEAN_PUMPS_BUTTON.checkForInput(MENU_MOUSE_POS):
+                    controller.clean_pumps()
+                if BACK_BUTTON.checkForInput(MENU_MOUSE_POS):
+                    run_interface()
+                if QUIT_BUTTON.checkForInput(MENU_MOUSE_POS):
+                    pygame.quit()
+                    sys.exit()
+
+        pygame.display.update()
+    # Removes _ from the selected_coctail.txt file so it will match with the names in coctails.json file
+def normalize(name):
+    return name.strip().lower().replace('_', ' ')
+
+    # Start pouring selected drink based on single or double button pressed
+def pour(single_or_double):
+    # Read selected cocktail names from the text file and normalize
+    with open(SELECTED_COCKTAIL, 'r', encoding='utf-8') as f:
+        selected_names = {normalize(line) for line in f if line.strip()}
+    #Print normalized selected cocktail
+    print("Normalized names from text file:")
+    for name in selected_names:
+        print(f"- {name}")
+
+    # Loads the coctktail.json file
+    with open(COCKTAILS_FILE, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+
+    # Extract the whole list of cocktails
+    cocktails = data.get('cocktails', [])
+
+    # Match cocktails based on normalized 'normal_name'
+    matched_cocktails = []
+    for cocktail in cocktails:
+        normal_name = normalize(cocktail.get('normal_name', ''))
+        if normal_name in selected_names:
+            matched_cocktails.append(cocktail)
+        else:
+            print(f"[No match] '{normal_name}'")
+
+    #Calls the function controller from controller.py
+    for cocktail in matched_cocktails:
+        controller.make_drink(CONFIG_FILE,cocktail, single_or_double)
 
 def run_interface():
     pygame.init()
@@ -229,11 +336,18 @@ def run_interface():
     except Exception as e:
         print("Error loading double.png:", e)
         double_logo = None
+    try:
+        settings_logo = pygame.image.load("settings.png")
+        settings_logo = pygame.transform.scale(settings_logo, (150, 150))
+    except Exception as e:
+        print("Error loading settings.png:", e)
+        settings_logo = None
 
     # Position extra logos: single on left, double on right, spaced more toward edges.
     margin = 50  # adjust as needed for spacing
     single_rect = pygame.Rect(margin, (screen_height - 150) // 2, 150, 150)
     double_rect = pygame.Rect(screen_width - margin - 150, (screen_height - 150) // 2, 150, 150)
+    settings_rect = pygame.Rect(margin, (screen_height + 1000) // 2, 150, 150)
 
     dragging = False
     drag_start_x = 0
@@ -280,8 +394,11 @@ def run_interface():
                         except Exception as e:
                             print("Error loading loading.png:", e)
                             loading_img = None
-                        if pouring_img and loading_img:
+                        if pouring_img and loading_img:                            
                             show_pouring_and_loading(screen, pouring_img, loading_img, duration_sec=10, background=background)
+                        #Start making the selected drink                    
+                        pour(single_or_double="single")       
+                        
                     elif double_rect.collidepoint(pos):
                         # Animate double logo click
                         if double_logo:
@@ -303,6 +420,15 @@ def run_interface():
                             loading_img = None
                         if pouring_img and loading_img:
                             show_pouring_and_loading(screen, pouring_img, loading_img, duration_sec=30, background=background)
+                        #Start making the selected drink 
+                        pour(single_or_double="double")
+                            
+                    elif settings_rect.collidepoint(pos):
+                        # Animate settings logo click
+                        if settings_logo:
+                            animate_logo_click(screen, settings_logo, settings_rect, base_size=150, target_size=220, duration=150, background=background, current_img=current_img)
+                            settings_interface()
+                        
                     dragging = False
                     drag_offset = 0
                     continue  # Skip further swipe handling.
@@ -343,6 +469,8 @@ def run_interface():
                             screen.blit(single_logo, single_rect)
                         if double_logo:
                             screen.blit(double_logo, double_rect)
+                        if settings_logo:
+                            screen.blit(settings_logo, settings_rect)
                         pygame.display.flip()
                         if progress >= 1.0:
                             break
@@ -351,8 +479,8 @@ def run_interface():
                     current_img, current_filename = images[current_index]
                     write_selection(current_filename)
                     # Animate both extra logos zooming together.
-                    if single_logo and double_logo:
-                        animate_both_logos_zoom(screen, single_logo, double_logo, single_rect, double_rect, base_size=150, target_size=175, duration=300, background=background, current_img=current_img)
+                    if single_logo and double_logo and settings_logo:
+                        animate_both_logos_zoom(screen, single_logo, double_logo, settings_logo, single_rect, double_rect, settings_rect, base_size=150, target_size=175, duration=300, background=background, current_img=current_img)
                 else:
                     # Animate snapping back if swipe is insufficient.
                     start_offset = drag_offset
@@ -377,6 +505,8 @@ def run_interface():
                             screen.blit(single_logo, single_rect)
                         if double_logo:
                             screen.blit(double_logo, double_rect)
+                        if settings_logo:
+                            screen.blit(settings_logo, settings_rect)
                         pygame.display.flip()
                         if progress >= 1.0:
                             break
@@ -409,6 +539,8 @@ def run_interface():
             screen.blit(single_logo, single_rect)
         if double_logo:
             screen.blit(double_logo, double_rect)
+        if settings_logo:
+            screen.blit(settings_logo, settings_rect)
         pygame.display.flip()
         clock.tick(60)
     pygame.quit()
