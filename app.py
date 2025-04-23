@@ -8,6 +8,9 @@ import assist
 from rembg import remove
 from PIL import Image
 
+from settings import *
+from helpers import *
+
 # Import your controller module
 try:
     import controller
@@ -16,6 +19,7 @@ except ModuleNotFoundError:
 
 # Load .env variables
 load_dotenv()
+
 
 # ---------- API KEY SETUP ----------
 if not os.getenv("OPENAI_API_KEY") and "openai_api_key" not in st.session_state:
@@ -27,10 +31,6 @@ if not os.getenv("OPENAI_API_KEY") and "openai_api_key" not in st.session_state:
         st.rerun()
     st.stop()
 
-# ---------- Global Setup ----------
-CONFIG_FILE = "pump_config.json"
-COCKTAILS_FILE = "cocktails.json"
-LOGO_FOLDER = "drink_logos"
 
 if not os.path.exists(LOGO_FOLDER):
     os.makedirs(LOGO_FOLDER)
@@ -39,42 +39,6 @@ if not os.path.exists(LOGO_FOLDER):
 if "selected_cocktail" not in st.session_state:
     st.session_state.selected_cocktail = None
 
-# ---------- Helper Functions ----------
-def load_saved_config():
-    if os.path.exists(CONFIG_FILE):
-        try:
-            with open(CONFIG_FILE, "r") as f:
-                return json.load(f)
-        except Exception as e:
-            st.error(f"Error loading configuration: {e}")
-    return {}
-
-def save_config(data):
-    try:
-        with open(CONFIG_FILE, "w") as f:
-            json.dump(data, f, indent=2)
-    except Exception as e:
-        st.error(f"Error saving configuration: {e}")
-
-def load_cocktails():
-    if os.path.exists(COCKTAILS_FILE):
-        try:
-            with open(COCKTAILS_FILE, "r") as f:
-                return json.load(f)
-        except Exception as e:
-            st.error(f"Error loading cocktails: {e}")
-    return {}
-
-def save_cocktails(data):
-    try:
-        with open(COCKTAILS_FILE, "w") as f:
-            json.dump(data, f, indent=2)
-    except Exception as e:
-        st.error(f"Error saving cocktails: {e}")
-
-def get_safe_name(name):
-    """Convert a cocktail name to a safe filename-friendly string."""
-    return name.lower().replace(" ", "_")
 
 # ---------- Tabs ----------
 tabs = st.tabs(["My Bar", "Settings", "Cocktail Menu"])
