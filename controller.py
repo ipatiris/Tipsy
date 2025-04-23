@@ -4,7 +4,10 @@ DEBUG = False  # Toggle debug mode on/off
              # If True, no GPIO access, only prints what's happening.
 
 if not DEBUG:
-    import RPi.GPIO as GPIO
+    try:
+        import RPi.GPIO as GPIO
+    except ModuleNotFoundError:
+        print('Controller modules not found. Pump control will be disabled')
 import time
 import os
 import json

@@ -12,10 +12,7 @@ from settings import *
 from helpers import *
 
 # Import your controller module
-try:
-    import controller
-except ModuleNotFoundError:
-    print('Controller modules not found. Pump control will be disabled')
+import controller
 
 # Load .env variables
 load_dotenv()
