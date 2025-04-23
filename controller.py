@@ -9,6 +9,8 @@ import time
 import os
 import json
 
+from settings import *
+
 # Define GPIO pins for each motor here (same as your test).
 # Adjust these if needed to match your hardware.
 MOTORS = [
@@ -94,25 +96,24 @@ def clean_pumps(duration=10):
         else:
             print("DEBUG: clean_pumps() complete no GPIO cleanup in debug mode.")
 
-def make_drink(pump_config_path, recipe, single_or_double="single"):
+def make_drink(recipe, single_or_double="single"):
     """
     Prepare a drink using the hardware pumps, based on:
-      1) pump_config.json (mapping from Pump # -> ingredient name)
-      2) a `recipe` dict from cocktails.json (with "ingredients": {...})
-      3) single_or_double parameter (either "single" or "double").
+      1) a `recipe` dict from cocktails.json (with "ingredients": {...})
+      2) single_or_double parameter (either "single" or "double").
 
     In debug mode, only prints messages instead of driving motors.
     """
     # 1) Load the pump config dictionary, e.g. {"Pump 1": "vodka", "Pump 2": "gin", ...}
-    if not os.path.exists(pump_config_path):
-        print(f"pump_config file not found: {pump_config_path}")
+    if not os.path.exists(CONFIG_FILE):
+        print(f"pump_config file not found: {CONFIG_FILE}")
         return
 
     try:
-        with open(pump_config_path, "r") as f:
+        with open(CONFIG_FILE, "r") as f:
             pump_config = json.load(f)
     except Exception as e:
-        print(f"Error reading {pump_config_path}: {e}")
+        print(f"Error reading {CONFIG_FILE}: {e}")
         return
 
     # 2) Extract the recipe's ingredients

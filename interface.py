@@ -4,6 +4,7 @@ import pygame
 
 from settings import *
 from helpers import load_cocktails
+from controller import make_drink
 
 def animate_text_zoom(screen, base_text, position, start_size, target_size, duration=300, background=None, current_img=None, image_offset=0):
     """Animate overlay text zooming from a small size to target size."""
@@ -283,6 +284,7 @@ def run_interface():
                             loading_img = None
                         if pouring_img and loading_img:
                             show_pouring_and_loading(screen, pouring_img, loading_img, duration_sec=10, background=background)
+                        make_drink(current_cocktail, 'single')
                     elif double_rect.collidepoint(pos):
                         # Animate double logo click
                         if double_logo:
@@ -304,6 +306,7 @@ def run_interface():
                             loading_img = None
                         if pouring_img and loading_img:
                             show_pouring_and_loading(screen, pouring_img, loading_img, duration_sec=30, background=background)
+                        make_drink(current_cocktail, 'double')
                     dragging = False
                     drag_offset = 0
                     continue  # Skip further swipe handling.
