@@ -1,7 +1,9 @@
 # interface.py
 import os
 import pygame
-import time
+
+from settings import *
+from helpers import load_cocktails
 
 def animate_text_zoom(screen, base_text, position, start_size, target_size, duration=300, background=None, current_img=None, image_offset=0):
     """Animate overlay text zooming from a small size to target size."""
@@ -173,10 +175,12 @@ def show_pouring_and_loading(screen, pouring_img, loading_img, duration_sec, bac
 
 def run_interface():
     pygame.init()
-    screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+    screen = pygame.display.set_mode((0, 0))
     screen_size = screen.get_size()
     screen_width, screen_height = screen_size
     pygame.display.set_caption("Cocktail Swipe")
+
+    cocktails = load_cocktails().get('cocktails', [])
 
     # Load the static background image (tipsy.png)
     try:
@@ -186,37 +190,34 @@ def run_interface():
         print("Error loading background image (tipsy.png):", e)
         background = None
 
-    # Load main swipe images (drink logos)
-    def get_images():
-        imgs = []
-        filenames = sorted([f for f in os.listdir("drink_logos") if f.lower().endswith('.png')])
-        for f in filenames:
-            path = os.path.join("drink_logos", f)
-            try:
-                img = pygame.image.load(path)
-                img = pygame.transform.scale(img, screen_size)
-                imgs.append((img, f))
-            except Exception as e:
-                print(f"Error loading {path}: {e}")
-        return imgs
-
-    images = get_images()
-    if not images:
+    if not cocktails:
         print("No cocktail logos found in drink_logos")
         pygame.quit()
         return
+    
+    # Pre-load all cocktail images
+    for cocktail in cocktails:
+        file_name = f'{cocktail.get("normal_name", "").lower().replace(" ", "_")}.png'
+        path = os.path.join("drink_logos", file_name)
+        try:
+            img = pygame.image.load(path)
+            img = pygame.transform.scale(img, screen_size)
+            cocktail['image'] = img
+        except Exception as e:
+            print(f"Error loading {path}: {e}")
+
 
     current_index = 0
-    current_img, current_filename = images[current_index]
 
-    def write_selection(filename):
-        safe_name = os.path.splitext(filename)[0]
-        with open("selected_cocktail.txt", "w") as f:
-            f.write(safe_name)
+    def load_cocktail(index):
+        current_cocktail = cocktails[index]
+        current_image = current_cocktail.get('image', None)
+        current_cocktail_name = current_cocktail.get('normal_name', '')
+        return current_cocktail, current_image, current_cocktail_name
 
-    write_selection(current_filename)
+    current_cocktail, current_image, current_cocktail_name = load_cocktail(current_index)
 
-    # Load extra logos and scale them to 75% of original (base size: 150x150)
+    # Load single & double buttons and scale them to 75% of original (base size: 150x150)
     try:
         single_logo = pygame.image.load("single.png")
         single_logo = pygame.transform.scale(single_logo, (150, 150))
@@ -264,7 +265,7 @@ def run_interface():
                     if single_rect.collidepoint(pos):
                         # Animate single logo click
                         if single_logo:
-                            animate_logo_click(screen, single_logo, single_rect, base_size=150, target_size=220, duration=150, background=background, current_img=current_img)
+                            animate_logo_click(screen, single_logo, single_rect, base_size=150, target_size=220, duration=150, background=background, current_img=current_image)
                         # Write mode selection "single"
                         with open("selected_mode.txt", "w") as f:
                             f.write("single")
@@ -285,7 +286,7 @@ def run_interface():
                     elif double_rect.collidepoint(pos):
                         # Animate double logo click
                         if double_logo:
-                            animate_logo_click(screen, double_logo, double_rect, base_size=150, target_size=220, duration=150, background=background, current_img=current_img)
+                            animate_logo_click(screen, double_logo, double_rect, base_size=150, target_size=220, duration=150, background=background, current_img=current_image)
                         # Write mode selection "double"
                         with open("selected_mode.txt", "w") as f:
                             f.write("double")
@@ -307,13 +308,13 @@ def run_interface():
                     drag_offset = 0
                     continue  # Skip further swipe handling.
                 # Otherwise, it's a swipe.
-                if abs(drag_offset) > screen_width / 2:
+                if abs(drag_offset) > screen_width / 4:
                     if drag_offset < 0:
                         target_offset = -screen_width
-                        new_index = (current_index + 1) % len(images)
+                        new_index = (current_index + 1) % len(cocktails)
                     else:
                         target_offset = screen_width
-                        new_index = (current_index - 1) % len(images)
+                        new_index = (current_index - 1) % len(cocktails)
                     start_offset = drag_offset
                     duration = 300
                     start_time = pygame.time.get_ticks()
@@ -325,16 +326,18 @@ def run_interface():
                             screen.blit(background, (0, 0))
                         else:
                             screen.fill((0, 0, 0))
-                        screen.blit(current_img, (current_offset, 0))
+                        screen.blit(current_image, (current_offset, 0))
                         if drag_offset < 0:
-                            next_img, _ = images[(current_index + 1) % len(images)]
+                            next_cocktail = cocktails[(current_index + 1) % len(cocktails)]
+                            next_img = next_cocktail.get('image', None)
                             screen.blit(next_img, (screen_width + current_offset, 0))
                         else:
-                            prev_img, _ = images[(current_index - 1) % len(images)]
+                            prev_cocktail = cocktails[(current_index - 1) % len(cocktails)]
+                            prev_img = prev_cocktail.get('image', None)
                             screen.blit(prev_img, (-screen_width + current_offset, 0))
                         # Draw overlay text at normal size.
                         font = pygame.font.SysFont(None, normal_text_size)
-                        drink_name = os.path.splitext(current_filename)[0].replace('_', ' ')
+                        drink_name = current_cocktail_name
                         text_surface = font.render(drink_name, True, (255, 255, 255))
                         text_rect = text_surface.get_rect(center=text_position)
                         screen.blit(text_surface, text_rect)
@@ -348,11 +351,11 @@ def run_interface():
                             break
                         clock.tick(60)
                     current_index = new_index
-                    current_img, current_filename = images[current_index]
-                    write_selection(current_filename)
+                    current_cocktail, current_image, current_cocktail_name = load_cocktail(current_index)
+
                     # Animate both extra logos zooming together.
                     if single_logo and double_logo:
-                        animate_both_logos_zoom(screen, single_logo, double_logo, single_rect, double_rect, base_size=150, target_size=175, duration=300, background=background, current_img=current_img)
+                        animate_both_logos_zoom(screen, single_logo, double_logo, single_rect, double_rect, base_size=150, target_size=175, duration=300, background=background, current_img=current_image)
                 else:
                     # Animate snapping back if swipe is insufficient.
                     start_offset = drag_offset
@@ -366,9 +369,9 @@ def run_interface():
                             screen.blit(background, (0, 0))
                         else:
                             screen.fill((0, 0, 0))
-                        screen.blit(current_img, (current_offset, 0))
+                        screen.blit(current_image, (current_offset, 0))
                         font = pygame.font.SysFont(None, normal_text_size)
-                        drink_name = os.path.splitext(current_filename)[0].replace('_', ' ')
+                        drink_name = current_cocktail_name
                         text_surface = font.render(drink_name, True, (255, 255, 255))
                         text_rect = text_surface.get_rect(center=text_position)
                         screen.blit(text_surface, text_rect)
@@ -390,17 +393,19 @@ def run_interface():
         else:
             screen.fill((0, 0, 0))
         if dragging:
-            screen.blit(current_img, (drag_offset, 0))
+            screen.blit(current_image, (drag_offset, 0))
             if drag_offset < 0:
-                next_img, _ = images[(current_index + 1) % len(images)]
+                next_cocktail = cocktails[(current_index + 1) % len(cocktails)]
+                next_img = next_cocktail.get('image', None)
                 screen.blit(next_img, (screen_width + drag_offset, 0))
             elif drag_offset > 0:
-                prev_img, _ = images[(current_index - 1) % len(images)]
+                prev_cocktail = cocktails[(current_index - 1) % len(cocktails)]
+                prev_img = prev_cocktail.get('image', None)
                 screen.blit(prev_img, (-screen_width + drag_offset, 0))
         else:
-            screen.blit(current_img, (0, 0))
+            screen.blit(current_image, (0, 0))
         font = pygame.font.SysFont(None, normal_text_size)
-        drink_name = os.path.splitext(current_filename)[0].replace('_', ' ')
+        drink_name = current_cocktail_name
         text_surface = font.render(drink_name, True, (255, 255, 255))
         text_rect = text_surface.get_rect(center=text_position)
         screen.blit(text_surface, text_rect)
