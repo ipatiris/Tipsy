@@ -172,7 +172,7 @@ def show_pouring_and_loading(screen, pouring_img, loading_img, watcher, backgrou
 
 def run_interface():
     pygame.init()
-    screen = pygame.display.set_mode((0, 0))
+    screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     screen_size = screen.get_size()
     screen_width, screen_height = screen_size
     pygame.display.set_caption("Cocktail Swipe")
