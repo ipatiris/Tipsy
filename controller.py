@@ -11,6 +11,7 @@ if not DEBUG:
 import time
 import os
 import json
+import concurrent.futures
 
 from settings import *
 
@@ -41,6 +42,7 @@ def setup_gpio():
             GPIO.setup(ia, GPIO.OUT)
             GPIO.setup(ib, GPIO.OUT)
 
+
 def motor_forward(ia, ib):
     """Drive motor forward."""
     if DEBUG:
@@ -49,6 +51,7 @@ def motor_forward(ia, ib):
         GPIO.output(ia, GPIO.HIGH)
         GPIO.output(ib, GPIO.LOW)
 
+
 def motor_stop(ia, ib):
     """Stop motor."""
     if DEBUG:
@@ -56,12 +59,25 @@ def motor_stop(ia, ib):
     else:
         GPIO.output(ia, GPIO.LOW)
         GPIO.output(ib, GPIO.LOW)
+
+
 def motor_reverse(ia,ib):
     if DEBUG:
         print("Debug reverse")
     else:
         GPIO.output(ia,GPIO.LOW)
         GPIO.output(ib,GPIO.HIGH)
+
+
+def pour(pump_index, amount):
+    ia, ib = MOTORS[pump_index]
+    seconds_to_pour = amount * OZ_COEFFICIENT
+
+    print(f"Pouring {amount} oz of {pump_index} for {seconds_to_pour:.2f} seconds.")
+    motor_forward(ia, ib)
+    time.sleep(seconds_to_pour)
+    motor_stop(ia, ib)
+
 
 def prime_pumps(duration=10):
     """
@@ -99,6 +115,23 @@ def clean_pumps(duration=10):
         else:
             print("DEBUG: clean_pumps() complete no GPIO cleanup in debug mode.")
 
+
+class ExecutorWatcher:
+
+    def __init__(self):
+        self.executors = []
+
+    def all_finished(self):
+        if any([not executor.done() for executor in self.executors]):
+            return False
+        
+        if not DEBUG:
+            GPIO.cleanup()
+        else:
+            print("DEBUG: make_drink() complete — no GPIO cleanup in debug mode.")
+        return True
+        
+
 def make_drink(recipe, single_or_double="single"):
     """
     Prepare a drink using the hardware pumps, based on:
@@ -128,14 +161,9 @@ def make_drink(recipe, single_or_double="single"):
     # 3) Single or double factor
     factor = 2 if single_or_double.lower() == "double" else 1
 
-    # 4) Get the 1oz coefficient (seconds per ounce) from environment or default to 8
-    try:
-        oz_coefficient = float(os.getenv("ONE_OZ_COEFFICIENT", "8"))
-    except ValueError:
-        oz_coefficient = 8.0
-
     setup_gpio()
-    try:
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        executor_watcher = ExecutorWatcher()
         for ingredient_name, measurement_str in ingredients.items():
             parts = measurement_str.split()
             if not parts:
@@ -172,17 +200,5 @@ def make_drink(recipe, single_or_double="single"):
                 print(f"Pump index {pump_index} out of range for '{ingredient_name}'. Skipping.")
                 continue
 
-            ia, ib = MOTORS[pump_index]
-            seconds_to_pour = oz_needed * oz_coefficient
-
-            print(f"Pouring {oz_needed} oz of {ingredient_name} via {chosen_pump} for {seconds_to_pour:.2f} seconds.")
-            motor_forward(ia, ib)
-            time.sleep(seconds_to_pour)
-            motor_stop(ia, ib)
-
-        print("Finished making the drink!")
-    finally:
-        if not DEBUG:
-            GPIO.cleanup()
-        else:
-            print("DEBUG: make_drink() complete — no GPIO cleanup in debug mode.")
+            executor_watcher.executors.append(executor.submit(pour, pump_index, oz_needed))
+        return executor_watcher

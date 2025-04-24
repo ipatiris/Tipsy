@@ -151,7 +151,7 @@ def animate_both_logos_zoom(screen, single_logo, double_logo, single_rect, doubl
             break
         clock.tick(60)
 
-def show_pouring_and_loading(screen, pouring_img, loading_img, duration_sec, background=None):
+def show_pouring_and_loading(screen, pouring_img, loading_img, watcher, background=None):
     """Overlay pouring_img full screen and a spinning loading_img (720x720) drawn underneath."""
     clock = pygame.time.Clock()
     start_time = pygame.time.get_ticks()
@@ -160,7 +160,7 @@ def show_pouring_and_loading(screen, pouring_img, loading_img, duration_sec, bac
     screen_width, screen_height = screen_size
     while True:
         elapsed = pygame.time.get_ticks() - start_time
-        if elapsed >= duration_sec * 1000:
+        if watcher.all_finished():
             break
         angle = (angle + 5) % 360
         rotated_loading = pygame.transform.rotate(loading_img, angle)
@@ -282,9 +282,12 @@ def run_interface():
                         except Exception as e:
                             print("Error loading loading.png:", e)
                             loading_img = None
+
+                        executor_watcher = make_drink(current_cocktail, 'single')
+
                         if pouring_img and loading_img:
-                            show_pouring_and_loading(screen, pouring_img, loading_img, duration_sec=10, background=background)
-                        make_drink(current_cocktail, 'single')
+                            show_pouring_and_loading(screen, pouring_img, loading_img, watcher=executor_watcher, background=background)
+
                     elif double_rect.collidepoint(pos):
                         # Animate double logo click
                         if double_logo:
@@ -304,9 +307,12 @@ def run_interface():
                         except Exception as e:
                             print("Error loading loading.png:", e)
                             loading_img = None
+
+                        executor_watcher = make_drink(current_cocktail, 'double')
+
                         if pouring_img and loading_img:
-                            show_pouring_and_loading(screen, pouring_img, loading_img, duration_sec=30, background=background)
-                        make_drink(current_cocktail, 'double')
+                            show_pouring_and_loading(screen, pouring_img, loading_img, watcher=executor_watcher, background=background)
+                        
                     dragging = False
                     drag_offset = 0
                     continue  # Skip further swipe handling.
