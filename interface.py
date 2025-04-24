@@ -172,12 +172,12 @@ def show_pouring_and_loading(screen, pouring_img, loading_img, watcher, backgrou
 
 def run_interface():
     pygame.init()
-    screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+    screen = pygame.display.set_mode((0, 0))
     screen_size = screen.get_size()
     screen_width, screen_height = screen_size
     pygame.display.set_caption("Cocktail Swipe")
 
-    cocktails = load_cocktails().get('cocktails', [])
+    cocktail_data = load_cocktails().get('cocktails', [])
 
     # Load the static background image (tipsy.png)
     try:
@@ -186,24 +186,25 @@ def run_interface():
     except Exception as e:
         print("Error loading background image (tipsy.png):", e)
         background = None
-
-    if not cocktails:
-        print("No cocktail logos found in drink_logos")
-        pygame.quit()
-        return
     
+    cocktails = []
     # Pre-load all cocktail images
-    for cocktail in cocktails:
+    for cocktail in cocktail_data:
         file_name = f'{cocktail.get("normal_name", "").lower().replace(" ", "_")}.png'
         path = os.path.join("drink_logos", file_name)
         try:
             img = pygame.image.load(path)
             img = pygame.transform.scale(img, screen_size)
             cocktail['image'] = img
+            cocktails.append(cocktail)
         except Exception as e:
             print(f"Error loading {path}: {e}")
 
-
+    if not cocktails:
+        print("No valid cocktails found in cocktails.json")
+        pygame.quit()
+        return
+    
     current_index = 0
 
     def load_cocktail(index):
