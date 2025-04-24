@@ -181,7 +181,7 @@ def run_interface():
         """Given a Cocktail object, get the path to the image for that cocktail.
         Image file name is assumed to be the normal_name in lower snake_case"""
         file_name = f'{cocktail.get("normal_name", "").lower().replace(" ", "_")}.png'
-        path = os.path.join("drink_logos", file_name)
+        path = os.path.join(LOGO_FOLDER, file_name)
         return path
 
     def load_cocktail_image(cocktail):
@@ -197,10 +197,13 @@ def run_interface():
     def load_cocktail(index):
         """Load a cocktail based on a provided index. Also pre-load the images for the previous and next cocktails"""
         current_cocktail = cocktails[index]
+        current_image = load_cocktail_image(current_cocktail)
         current_cocktail_name = current_cocktail.get('normal_name', '')
-        next_cocktail = cocktails[(index + 1) % len(cocktails)]
         previous_cocktail = cocktails[(index - 1) % len(cocktails)]
-        return current_cocktail, load_cocktail_image(current_cocktail), current_cocktail_name, load_cocktail_image(previous_cocktail), load_cocktail_image(next_cocktail)
+        previous_image = load_cocktail_image(previous_cocktail)
+        next_cocktail = cocktails[(index + 1) % len(cocktails)]
+        next_image = load_cocktail_image(next_cocktail)
+        return current_cocktail, current_image, current_cocktail_name, previous_image, next_image
 
     cocktail_data = load_cocktails().get('cocktails', [])
 

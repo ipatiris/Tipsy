@@ -32,10 +32,16 @@ def load_cocktails():
     return {}
 
 
-def save_cocktails(data):
+def save_cocktails(data, append=True):
+    """Save the given list of cocktails to the cocktails file."""
     try:
+        cocktails = load_cocktails()
         with open(COCKTAILS_FILE, "w") as f:
-            json.dump(data, f, indent=2)
+            if append:
+                cocktails['cocktails'] += data['cocktails']
+            else:
+                cocktails = data
+            json.dump(cocktails, f, indent=2)
     except Exception as e:
         st.error(f"Error saving cocktails: {e}")
 

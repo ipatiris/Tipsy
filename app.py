@@ -3,7 +3,7 @@ import json
 import base64
 import requests
 import streamlit as st
-from dotenv import load_dotenv, set_key
+from dotenv import set_key
 import assist
 from rembg import remove
 from PIL import Image
@@ -14,12 +14,9 @@ from helpers import *
 # Import your controller module
 import controller
 
-# Load .env variables
-load_dotenv()
-
 
 # ---------- API KEY SETUP ----------
-if not os.getenv("OPENAI_API_KEY") and "openai_api_key" not in st.session_state:
+if not OPENAI_API_KEY and "openai_api_key" not in st.session_state:
     st.title("Enter OpenAI API Key")
     key_input = st.text_input("OpenAI API Key", type="password")
     if st.button("Submit"):
@@ -78,6 +75,7 @@ with tabs[0]:
 
     st.markdown("<h3 style='text-align: center;'>Requests for the bartender</h3>", unsafe_allow_html=True)
     bartender_requests = st.text_area("Enter any special requests for the bartender", height=100)
+    clear_cocktails = st.checkbox("Remove existing cocktails from the menu")
 
     if st.button("Generate Recipes"):
         pump_to_drink = {pump: drink for pump, drink in pump_inputs.items() if drink.strip()}
@@ -87,8 +85,8 @@ with tabs[0]:
         st.markdown(f"<p style='text-align: center;'>Pump configuration: {pump_to_drink}</p>", unsafe_allow_html=True)
         
         # Ask AI to generate cocktails from these pumps + bartender requests
-        cocktails_json = assist.generate_cocktails(pump_to_drink, bartender_requests)
-        save_cocktails(cocktails_json)
+        cocktails_json = assist.generate_cocktails(pump_to_drink, bartender_requests, not clear_cocktails)
+        save_cocktails(cocktails_json, not clear_cocktails)
         
         st.markdown("<h2 style='text-align: center;'>Generating Cocktail Logos...</h2>", unsafe_allow_html=True)
         image_paths = {}
