@@ -27,9 +27,10 @@ MOTORS = [
     (26, 19),  # Pump 6
     (20, 21),  # Pump 7
     (16, 12),  # Pump 8
-    # If you have up to 10 pumps, add them here:
-    # (X, Y),   # Pump 9
-    # (A, B)    # Pump 10
+    (8, 7),    # Pump 9
+    (24, 25),  # Pump 10
+    (18, 23),  # Pump 11
+    (14, 15),  # Pump 12
 ]
 
 
