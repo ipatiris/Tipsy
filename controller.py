@@ -7,6 +7,7 @@ if not DEBUG:
     try:
         import RPi.GPIO as GPIO
     except ModuleNotFoundError:
+        DEBUG = True
         print('Controller modules not found. Pump control will be disabled')
 import time
 import os
@@ -162,43 +163,43 @@ def make_drink(recipe, single_or_double="single"):
     factor = 2 if single_or_double.lower() == "double" else 1
 
     setup_gpio()
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        executor_watcher = ExecutorWatcher()
-        for ingredient_name, measurement_str in ingredients.items():
-            parts = measurement_str.split()
-            if not parts:
-                print(f"Cannot parse measurement for {ingredient_name}. Skipping.")
-                continue
-            try:
-                oz_amount = float(parts[0])  # parse numeric
-            except ValueError:
-                print(f"Cannot parse numeric amount '{parts[0]}' for {ingredient_name}. Skipping.")
-                continue
+    executor = concurrent.futures.ThreadPoolExecutor()
+    executor_watcher = ExecutorWatcher()
+    for ingredient_name, measurement_str in ingredients.items():
+        parts = measurement_str.split()
+        if not parts:
+            print(f"Cannot parse measurement for {ingredient_name}. Skipping.")
+            continue
+        try:
+            oz_amount = float(parts[0])  # parse numeric
+        except ValueError:
+            print(f"Cannot parse numeric amount '{parts[0]}' for {ingredient_name}. Skipping.")
+            continue
 
-            oz_needed = oz_amount * factor
+        oz_needed = oz_amount * factor
 
-            # find a matching pump label in pump_config
-            chosen_pump = None
-            for pump_label, config_ing_name in pump_config.items():
-                if config_ing_name.strip().lower() == ingredient_name.strip().lower():
-                    chosen_pump = pump_label
-                    break
+        # find a matching pump label in pump_config
+        chosen_pump = None
+        for pump_label, config_ing_name in pump_config.items():
+            if config_ing_name.strip().lower() == ingredient_name.strip().lower():
+                chosen_pump = pump_label
+                break
 
-            if not chosen_pump:
-                print(f"No pump mapped to ingredient '{ingredient_name}'. Skipping.")
-                continue
+        if not chosen_pump:
+            print(f"No pump mapped to ingredient '{ingredient_name}'. Skipping.")
+            continue
 
-            # parse 'Pump 1' -> index=0
-            try:
-                pump_num_str = chosen_pump.replace("Pump", "").strip()
-                pump_index = int(pump_num_str) - 1
-            except ValueError:
-                print(f"Could not parse pump label '{chosen_pump}'. Skipping.")
-                continue
+        # parse 'Pump 1' -> index=0
+        try:
+            pump_num_str = chosen_pump.replace("Pump", "").strip()
+            pump_index = int(pump_num_str) - 1
+        except ValueError:
+            print(f"Could not parse pump label '{chosen_pump}'. Skipping.")
+            continue
 
-            if pump_index < 0 or pump_index >= len(MOTORS):
-                print(f"Pump index {pump_index} out of range for '{ingredient_name}'. Skipping.")
-                continue
+        if pump_index < 0 or pump_index >= len(MOTORS):
+            print(f"Pump index {pump_index} out of range for '{ingredient_name}'. Skipping.")
+            continue
 
-            executor_watcher.executors.append(executor.submit(pour, pump_index, oz_needed))
-        return executor_watcher
+        executor_watcher.executors.append(executor.submit(pour, pump_index, oz_needed))
+    return executor_watcher

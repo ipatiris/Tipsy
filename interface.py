@@ -153,13 +153,10 @@ def animate_both_logos_zoom(screen, single_logo, double_logo, single_rect, doubl
 
 def show_pouring_and_loading(screen, pouring_img, loading_img, watcher, background=None):
     """Overlay pouring_img full screen and a spinning loading_img (720x720) drawn underneath."""
-    clock = pygame.time.Clock()
-    start_time = pygame.time.get_ticks()
     angle = 0
     screen_size = screen.get_size()
     screen_width, screen_height = screen_size
     while True:
-        elapsed = pygame.time.get_ticks() - start_time
         if watcher.all_finished():
             break
         angle = (angle + 5) % 360
@@ -172,7 +169,6 @@ def show_pouring_and_loading(screen, pouring_img, loading_img, watcher, backgrou
         # Then draw pouring image on top
         screen.blit(pouring_img, (0, 0))
         pygame.display.flip()
-        clock.tick(60)
 
 def run_interface():
     pygame.init()
@@ -267,9 +263,6 @@ def run_interface():
                         # Animate single logo click
                         if single_logo:
                             animate_logo_click(screen, single_logo, single_rect, base_size=150, target_size=220, duration=150, background=background, current_img=current_image)
-                        # Write mode selection "single"
-                        with open("selected_mode.txt", "w") as f:
-                            f.write("single")
                         try:
                             pouring_img = pygame.image.load("pouring.png")
                             pouring_img = pygame.transform.scale(pouring_img, screen_size)
@@ -292,9 +285,6 @@ def run_interface():
                         # Animate double logo click
                         if double_logo:
                             animate_logo_click(screen, double_logo, double_rect, base_size=150, target_size=220, duration=150, background=background, current_img=current_image)
-                        # Write mode selection "double"
-                        with open("selected_mode.txt", "w") as f:
-                            f.write("double")
                         try:
                             pouring_img = pygame.image.load("pouring.png")
                             pouring_img = pygame.transform.scale(pouring_img, screen_size)
