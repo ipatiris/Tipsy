@@ -172,10 +172,31 @@ def show_pouring_and_loading(screen, pouring_img, loading_img, watcher, backgrou
 
 def run_interface():
     pygame.init()
-    screen = pygame.display.set_mode((0, 0))
+    screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     screen_size = screen.get_size()
     screen_width, screen_height = screen_size
     pygame.display.set_caption("Cocktail Swipe")
+
+    def get_cocktail_image_path(cocktail):
+        file_name = f'{cocktail.get("normal_name", "").lower().replace(" ", "_")}.png'
+        path = os.path.join("drink_logos", file_name)
+        return path
+
+    def load_cocktail_image(cocktail):
+        path = get_cocktail_image_path(cocktail)
+        try:
+            img = pygame.image.load(path)
+            img = pygame.transform.scale(img, screen_size)
+            return img
+        except Exception as e:
+            print(f"Error loading {path}: {e}")
+
+    def load_cocktail(index):
+        current_cocktail = cocktails[index]
+        current_cocktail_name = current_cocktail.get('normal_name', '')
+        next_cocktail = cocktails[(index + 1) % len(cocktails)]
+        previous_cocktail = cocktails[(index - 1) % len(cocktails)]
+        return current_cocktail, load_cocktail_image(current_cocktail), current_cocktail_name, load_cocktail_image(previous_cocktail), load_cocktail_image(next_cocktail)
 
     cocktail_data = load_cocktails().get('cocktails', [])
 
@@ -188,17 +209,10 @@ def run_interface():
         background = None
     
     cocktails = []
-    # Pre-load all cocktail images
+
     for cocktail in cocktail_data:
-        file_name = f'{cocktail.get("normal_name", "").lower().replace(" ", "_")}.png'
-        path = os.path.join("drink_logos", file_name)
-        try:
-            img = pygame.image.load(path)
-            img = pygame.transform.scale(img, screen_size)
-            cocktail['image'] = img
+        if os.path.exists(get_cocktail_image_path(cocktail)):
             cocktails.append(cocktail)
-        except Exception as e:
-            print(f"Error loading {path}: {e}")
 
     if not cocktails:
         print("No valid cocktails found in cocktails.json")
@@ -207,13 +221,7 @@ def run_interface():
     
     current_index = 0
 
-    def load_cocktail(index):
-        current_cocktail = cocktails[index]
-        current_image = current_cocktail.get('image', None)
-        current_cocktail_name = current_cocktail.get('normal_name', '')
-        return current_cocktail, current_image, current_cocktail_name
-
-    current_cocktail, current_image, current_cocktail_name = load_cocktail(current_index)
+    current_cocktail, current_image, current_cocktail_name, previous_image, next_image = load_cocktail(current_index)
 
     # Load single & double buttons and scale them to 75% of original (base size: 150x150)
     try:
@@ -328,13 +336,9 @@ def run_interface():
                             screen.fill((0, 0, 0))
                         screen.blit(current_image, (current_offset, 0))
                         if drag_offset < 0:
-                            next_cocktail = cocktails[(current_index + 1) % len(cocktails)]
-                            next_img = next_cocktail.get('image', None)
-                            screen.blit(next_img, (screen_width + current_offset, 0))
+                            screen.blit(next_image, (screen_width + current_offset, 0))
                         else:
-                            prev_cocktail = cocktails[(current_index - 1) % len(cocktails)]
-                            prev_img = prev_cocktail.get('image', None)
-                            screen.blit(prev_img, (-screen_width + current_offset, 0))
+                            screen.blit(previous_image, (-screen_width + current_offset, 0))
                         # Draw overlay text at normal size.
                         font = pygame.font.SysFont(None, normal_text_size)
                         drink_name = current_cocktail_name
@@ -351,7 +355,7 @@ def run_interface():
                             break
                         clock.tick(60)
                     current_index = new_index
-                    current_cocktail, current_image, current_cocktail_name = load_cocktail(current_index)
+                    current_cocktail, current_image, current_cocktail_name, previous_image, next_image = load_cocktail(current_index)
 
                     # Animate both extra logos zooming together.
                     if single_logo and double_logo:
@@ -395,13 +399,9 @@ def run_interface():
         if dragging:
             screen.blit(current_image, (drag_offset, 0))
             if drag_offset < 0:
-                next_cocktail = cocktails[(current_index + 1) % len(cocktails)]
-                next_img = next_cocktail.get('image', None)
-                screen.blit(next_img, (screen_width + drag_offset, 0))
+                screen.blit(next_image, (screen_width + drag_offset, 0))
             elif drag_offset > 0:
-                prev_cocktail = cocktails[(current_index - 1) % len(cocktails)]
-                prev_img = prev_cocktail.get('image', None)
-                screen.blit(prev_img, (-screen_width + drag_offset, 0))
+                screen.blit(previous_image, (-screen_width + drag_offset, 0))
         else:
             screen.blit(current_image, (0, 0))
         font = pygame.font.SysFont(None, normal_text_size)
