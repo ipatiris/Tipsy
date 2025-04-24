@@ -178,11 +178,14 @@ def run_interface():
     pygame.display.set_caption("Cocktail Swipe")
 
     def get_cocktail_image_path(cocktail):
+        """Given a Cocktail object, get the path to the image for that cocktail.
+        Image file name is assumed to be the normal_name in lower snake_case"""
         file_name = f'{cocktail.get("normal_name", "").lower().replace(" ", "_")}.png'
         path = os.path.join("drink_logos", file_name)
         return path
 
     def load_cocktail_image(cocktail):
+        """Given a Cocktail object, load the image for that cocktail and scale it to the screen size"""
         path = get_cocktail_image_path(cocktail)
         try:
             img = pygame.image.load(path)
@@ -192,6 +195,7 @@ def run_interface():
             print(f"Error loading {path}: {e}")
 
     def load_cocktail(index):
+        """Load a cocktail based on a provided index. Also pre-load the images for the previous and next cocktails"""
         current_cocktail = cocktails[index]
         current_cocktail_name = current_cocktail.get('normal_name', '')
         next_cocktail = cocktails[(index + 1) % len(cocktails)]
