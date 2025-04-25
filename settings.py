@@ -15,3 +15,5 @@ try:
     OZ_COEFFICIENT = float(os.getenv("OZ_COEFFICIENT", "8"))
 except ValueError:
     OZ_COEFFICIENT = 8.0
+
+INVERT_PUMP_PINS=os.getenv("INVERT_PUMP_PINS", 'false') == 'true'

@@ -50,8 +50,12 @@ def motor_forward(ia, ib):
     if DEBUG:
         print(f"DEBUG: motor_forward(ia={ia}, ib={ib}) called — No actual motor movement.")
     else:
-        GPIO.output(ia, GPIO.HIGH)
-        GPIO.output(ib, GPIO.LOW)
+        if INVERT_PUMP_PINS:
+            GPIO.output(ia, GPIO.LOW)
+            GPIO.output(ib, GPIO.HIGH)
+        else:
+            GPIO.output(ia, GPIO.HIGH)
+            GPIO.output(ib, GPIO.LOW)
 
 
 def motor_stop(ia, ib):
@@ -67,8 +71,12 @@ def motor_reverse(ia,ib):
     if DEBUG:
         print("Debug reverse")
     else:
-        GPIO.output(ia,GPIO.LOW)
-        GPIO.output(ib,GPIO.HIGH)
+        if INVERT_PUMP_PINS:
+            GPIO.output(ia,GPIO.HIGH)
+            GPIO.output(ib,GPIO.LOW)
+        else:
+            GPIO.output(ia,GPIO.LOW)
+            GPIO.output(ib,GPIO.HIGH)
 
 
 def pour(pump_index, amount):
