@@ -3,7 +3,6 @@ from pydantic import BaseModel
 import os
 from openai import OpenAI, OpenAIError
 
-from helpers import load_cocktails
 
 def get_client():
     api_key = os.getenv("OPENAI_API_KEY")
@@ -44,6 +43,7 @@ def generate_cocktails(pump_to_drink: dict, requests_for_bartender: str = "", ex
         "Also include each type of liquor available as it's own drink, served neat with the normal cocktail name being the name of the liquor\n\n"
     )
     if exclude_existing:
+        from helpers import load_cocktails
         prompt += (
             "Do not include the following cocktails, which I already have recipes for:\n\n"
             f"{json.dumps(load_cocktails(), indent=2)}\n\n"

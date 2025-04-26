@@ -54,6 +54,7 @@ def get_safe_name(name):
     """Convert a cocktail name to a safe filename-friendly string."""
     return name.lower().replace(" ", "_")
 
+
 def generate_image(normal_name):
     safe_cname = get_safe_name(normal_name)
     filename = os.path.join(LOGO_FOLDER, f"{safe_cname}.png")
