@@ -1,12 +1,9 @@
 import os
 import json
 import base64
-import requests
 import streamlit as st
 from dotenv import set_key
 import assist
-from rembg import remove
-from PIL import Image
 
 from settings import *
 from helpers import *
@@ -89,41 +86,14 @@ with tabs[0]:
         save_cocktails(cocktails_json, not clear_cocktails)
         
         st.markdown("<h2 style='text-align: center;'>Generating Cocktail Logos...</h2>", unsafe_allow_html=True)
-        image_paths = {}
         cocktails = cocktails_json.get("cocktails", [])
         total = len(cocktails) if cocktails else 1
         progress_bar = st.progress(0, text="Generating images...")
 
         for idx, cocktail in enumerate(cocktails):
             normal_name = cocktail.get("normal_name", "unknown_drink")
-            safe_cname = get_safe_name(normal_name)
-            filename = os.path.join(LOGO_FOLDER, f"{safe_cname}.png")
-
-            if os.path.exists(filename):
-                # If it already exists, skip generation
-                image_paths[normal_name] = filename
-            else:
-                prompt = (
-                    f"A realistic illustration of a {normal_name} cocktail on a plain white background. "
-                    "The lighting and shading create depth and realism, making the drink appear fresh and inviting."
-                )
-                try:
-                    # 1) Generate the image URL
-                    image_url = assist.generate_image(prompt)
-
-                    # 2) Download + remove background in memory
-                    img_data = requests.get(image_url).content
-                    from io import BytesIO
-                    with Image.open(BytesIO(img_data)).convert("RGBA") as original_img:
-                        bg_removed = remove(original_img)
-                        bg_removed.save(filename, "PNG")
-
-                    image_paths[normal_name] = filename
-
-                except Exception as e:
-                    image_paths[normal_name] = f"Error: {e}"
-
-                progress_bar.progress((idx + 1) / total)
+            generate_image(normal_name)
+            progress_bar.progress((idx + 1) / total)
 
         progress_bar.empty()
         st.success("Image generation complete.")

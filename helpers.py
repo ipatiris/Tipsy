@@ -2,6 +2,10 @@ import os
 import json
 import streamlit as st
 from settings import *
+import assist
+import requests
+from rembg import remove
+from PIL import Image
 
 
 def load_saved_config():
@@ -49,3 +53,31 @@ def save_cocktails(data, append=True):
 def get_safe_name(name):
     """Convert a cocktail name to a safe filename-friendly string."""
     return name.lower().replace(" ", "_")
+
+def generate_image(normal_name):
+    safe_cname = get_safe_name(normal_name)
+    filename = os.path.join(LOGO_FOLDER, f"{safe_cname}.png")
+
+    if os.path.exists(filename):
+        # If it already exists, skip generation
+        return filename
+    else:
+        prompt = (
+            f"A realistic illustration of a {normal_name} cocktail on a plain white background. "
+            "The lighting and shading create depth and realism, making the drink appear fresh and inviting."
+        )
+        try:
+            # 1) Generate the image URL
+            image_url = assist.generate_image(prompt)
+
+            # 2) Download + remove background in memory
+            img_data = requests.get(image_url).content
+            from io import BytesIO
+            with Image.open(BytesIO(img_data)).convert("RGBA") as original_img:
+                bg_removed = remove(original_img)
+                bg_removed.save(filename, "PNG")
+
+            return filename
+
+        except Exception as e:
+            pass
