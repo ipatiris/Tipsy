@@ -157,7 +157,7 @@ def show_pouring_and_loading(screen, pouring_img, loading_img, watcher, backgrou
     screen_size = screen.get_size()
     screen_width, screen_height = screen_size
     while True:
-        if watcher.all_finished():
+        if watcher.done():
             break
         angle = (angle + 5) % 360
         rotated_loading = pygame.transform.rotate(loading_img, angle)
@@ -172,7 +172,10 @@ def show_pouring_and_loading(screen, pouring_img, loading_img, watcher, backgrou
 
 def run_interface():
     pygame.init()
-    screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+    if FULL_SCREEN:
+        screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+    else:
+        screen = pygame.display.set_mode((0, 0))
     screen_size = screen.get_size()
     screen_width, screen_height = screen_size
     pygame.display.set_caption("Cocktail Swipe")

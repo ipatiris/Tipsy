@@ -79,14 +79,19 @@ def motor_reverse(ia,ib):
             GPIO.output(ib,GPIO.HIGH)
 
 
-def pour(pump_index, amount):
-    ia, ib = MOTORS[pump_index]
-    seconds_to_pour = amount * OZ_COEFFICIENT
+class Pour:
+    def __init__(self, pump_index, amount):
+        self.pump_index = pump_index
+        self.amount = amount
 
-    print(f"Pouring {amount} oz of {pump_index} for {seconds_to_pour:.2f} seconds.")
-    motor_forward(ia, ib)
-    time.sleep(seconds_to_pour)
-    motor_stop(ia, ib)
+    def run(self):
+        ia, ib = MOTORS[self.pump_index]
+        seconds_to_pour = self.amount * OZ_COEFFICIENT
+
+        print(f'Pouring {self.amount} oz of Pump {self.pump_index} for {seconds_to_pour:.2f} seconds.')
+        motor_forward(ia, ib)
+        time.sleep(seconds_to_pour)
+        motor_stop(ia, ib)
 
 
 def prime_pumps(duration=10):
@@ -131,49 +136,17 @@ class ExecutorWatcher:
     def __init__(self):
         self.executors = []
 
-    def all_finished(self):
+    def done(self):
         if any([not executor.done() for executor in self.executors]):
             return False
-        
-        if not DEBUG:
-            GPIO.cleanup()
-        else:
-            print("DEBUG: make_drink() complete — no GPIO cleanup in debug mode.")
         return True
-        
 
-def make_drink(recipe, single_or_double="single"):
-    """
-    Prepare a drink using the hardware pumps, based on:
-      1) a `recipe` dict from cocktails.json (with "ingredients": {...})
-      2) single_or_double parameter (either "single" or "double").
 
-    In debug mode, only prints messages instead of driving motors.
-    """
-    # 1) Load the pump config dictionary, e.g. {"Pump 1": "vodka", "Pump 2": "gin", ...}
-    if not os.path.exists(CONFIG_FILE):
-        print(f"pump_config file not found: {CONFIG_FILE}")
-        return
-
-    try:
-        with open(CONFIG_FILE, "r") as f:
-            pump_config = json.load(f)
-    except Exception as e:
-        print(f"Error reading {CONFIG_FILE}: {e}")
-        return
-
-    # 2) Extract the recipe's ingredients
-    ingredients = recipe.get("ingredients", {})
-    if not ingredients:
-        print("No ingredients found in recipe.")
-        return
-
-    # 3) Single or double factor
-    factor = 2 if single_or_double.lower() == "double" else 1
-
-    setup_gpio()
+def pour_ingredients(ingredients, single_or_double, pump_config):
     executor = concurrent.futures.ThreadPoolExecutor()
     executor_watcher = ExecutorWatcher()
+    factor = 2 if single_or_double.lower() == "double" else 1
+    index = 1
     for ingredient_name, measurement_str in ingredients.items():
         parts = measurement_str.split()
         if not parts:
@@ -210,5 +183,51 @@ def make_drink(recipe, single_or_double="single"):
             print(f"Pump index {pump_index} out of range for '{ingredient_name}'. Skipping.")
             continue
 
-        executor_watcher.executors.append(executor.submit(pour, pump_index, oz_needed))
+        executor_watcher.executors.append(executor.submit(Pour(pump_index, oz_needed).run))
+
+        if index % PUMP_CONCURRENCY == 0:
+            while not executor_watcher.done():
+                pass
+        index += 1
+
+    while not executor_watcher.done():
+        pass
+    
+    if not DEBUG:
+        GPIO.cleanup()
+    else:
+        print("DEBUG: pour_ingredients() complete — no GPIO cleanup in debug mode.")
+        
+
+def make_drink(recipe, single_or_double="single"):
+    """
+    Prepare a drink using the hardware pumps, based on:
+      1) a `recipe` dict from cocktails.json (with "ingredients": {...})
+      2) single_or_double parameter (either "single" or "double").
+
+    In debug mode, only prints messages instead of driving motors.
+    """
+    # 1) Load the pump config dictionary, e.g. {"Pump 1": "vodka", "Pump 2": "gin", ...}
+    if not os.path.exists(CONFIG_FILE):
+        print(f"pump_config file not found: {CONFIG_FILE}")
+        return
+
+    try:
+        with open(CONFIG_FILE, "r") as f:
+            pump_config = json.load(f)
+    except Exception as e:
+        print(f"Error reading {CONFIG_FILE}: {e}")
+        return
+
+    # 2) Extract the recipe's ingredients
+    ingredients = recipe.get("ingredients", {})
+    if not ingredients:
+        print("No ingredients found in recipe.")
+        return
+
+    setup_gpio()
+    executor = concurrent.futures.ThreadPoolExecutor()
+    executor_watcher = ExecutorWatcher()
+    executor_watcher.executors.append(executor.submit(pour_ingredients, ingredients, single_or_double, pump_config))
+
     return executor_watcher
