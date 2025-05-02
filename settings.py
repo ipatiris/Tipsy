@@ -16,4 +16,6 @@ try:
 except ValueError:
     OZ_COEFFICIENT = 8.0
 
-INVERT_PUMP_PINS=os.getenv("INVERT_PUMP_PINS", 'false') == 'true'
+INVERT_PUMP_PINS = os.getenv('INVERT_PUMP_PINS', 'false') == 'true'
+PUMP_CONCURRENCY = int(os.getenv('PUMP_CONCURRENCY', 3))
+FULL_SCREEN = os.getenv('FULL_SCREEN', 'true') == 'true'
