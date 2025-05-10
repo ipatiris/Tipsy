@@ -31,15 +31,25 @@ if "selected_cocktail" not in st.session_state:
     st.session_state.selected_cocktail = None
 
 
+saved_config = load_saved_config()
+# Load the cocktails from file
+cocktail_data = {}
+if os.path.exists(COCKTAILS_FILE):
+    try:
+        with open(COCKTAILS_FILE, "r") as f:
+            cocktail_data = json.load(f)
+    except Exception as e:
+        st.error(f"Error loading cocktails: {e}")
+
+
 # ---------- Tabs ----------
-tabs = st.tabs(["My Bar", "Settings", "Cocktail Menu"])
+tabs = st.tabs(["My Bar", "Settings", "Cocktail Menu", "Add Cocktail"])
 
 # ================ TAB 1: My Bar ================
 with tabs[0]:
     st.markdown("<h1 style='text-align: center;'>My Bar</h1>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center;'>Enter the drink names for each pump:</p>", unsafe_allow_html=True)
     
-    saved_config = load_saved_config()
     pump_inputs = {}
 
     col1, col2 = st.columns(2)
@@ -125,15 +135,6 @@ with tabs[1]:
 with tabs[2]:
     st.markdown("<h1 style='text-align: center;'>Cocktail Menu</h1>", unsafe_allow_html=True)
 
-    # Load the cocktails from file
-    cocktail_data = {}
-    if os.path.exists(COCKTAILS_FILE):
-        try:
-            with open(COCKTAILS_FILE, "r") as f:
-                cocktail_data = json.load(f)
-        except Exception as e:
-            st.error(f"Error loading cocktails: {e}")
-
     if st.session_state.selected_cocktail:
         # USER IS VIEWING A COCKTAIL DETAIL PAGE
         safe_name = st.session_state.selected_cocktail
@@ -210,13 +211,16 @@ with tabs[2]:
 
             with cols[1]:
                 if st.button("Pour"):
-                    st.info("Pouring a single serving...")
+                    note = st.info("Pouring a single serving...")
                     # We call controller.make_drink with single
                     # Build a dictionary that matches what the controller expects
                     # The 'selected_cocktail' is already a dict from cocktails.json
                     # so we can pass it directly.
                     try:
-                        controller.make_drink(CONFIG_FILE, selected_cocktail, single_or_double="single")
+                        executor_watcher = controller.make_drink(selected_cocktail, single_or_double="single")
+                        while not executor_watcher.done():
+                            pass
+                        note.empty()
                     except Exception as e:
                         st.error(f"Error while pouring: {e}")
 
@@ -255,10 +259,43 @@ with tabs[2]:
                     if st.button("Pour", key=f"pour_{safe_cname}"):
                         # If they pour from the gallery, we can do single as well,
                         # but we have no way to adjust recipe first. We'll just pour the default recipe.
-                        st.info(f"Pouring a single serving of {normal_name} ...")
+                        note = st.info(f"Pouring a single serving of {normal_name} ...")
                         try:
-                            controller.make_drink(CONFIG_FILE, cocktail, single_or_double="single")
+                            executor_watcher = controller.make_drink(cocktail, single_or_double="single")
+                            while not executor_watcher.done():
+                                pass
+                            note.empty()
                         except Exception as e:
                             st.error(f"Error while pouring: {e}")
         else:
             st.markdown("<p style='text-align: center;'>No recipes generated yet. Please use the 'My Bar' tab to generate recipes.</p>", unsafe_allow_html=True)
+
+# ================ TAB 4: Add Cocktail ================
+with tabs[3]:
+    st.markdown("<h1 style='text-align: center;'>Add Cocktail</h1>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center;'>Recipe</h2>", unsafe_allow_html=True)
+    recipe = {
+        'ingredients': {}
+    }
+
+    recipe['normal_name'] = st.text_input(
+        label='Cocktail Name'
+    )
+    recipe['fun_name'] = recipe['normal_name']
+
+    for index, pump in enumerate(saved_config):
+        ingredient = saved_config[pump]
+        value = st.slider(
+            f"{ingredient} (oz)",
+            min_value=0.0,
+            max_value=4.0,
+            value=0.0,
+            step=0.25,
+        )
+        if value > 0:
+            recipe['ingredients'][ingredient] = f"{value} oz".strip()
+
+    if st.button("Save") and recipe['normal_name'] and len(recipe['ingredients']) > 0:
+        if recipe['normal_name'] not in list(map(lambda x: x['normal_name'], cocktail_data['cocktails'])):
+            generate_image(recipe['normal_name'])
+            save_cocktails({'cocktails': [recipe]})
