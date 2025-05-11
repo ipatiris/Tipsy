@@ -18,21 +18,22 @@ from settings import *
 
 # Define GPIO pins for each motor here (same as your test).
 # Adjust these if needed to match your hardware.
-MOTORS = [
-    (17, 4),   # Pump 1
-    (22, 27),  # Pump 2
-    (9, 10),   # Pump 3
-    (5, 11),   # Pump 4
-    (13, 6),   # Pump 5
-    (26, 19),  # Pump 6
-    (20, 21),  # Pump 7
-    (16, 12),  # Pump 8
-    (7, 8),    # Pump 9
-    (25, 24),  # Pump 10
-    (23, 18),  # Pump 11
-    (15, 14),  # Pump 12
-]
 
+MOTORS = [
+(17, 4), # Pump 1
+(22, 27), # Pump 2
+(9, 10), # Pump 3
+(5, 11), # Pump 4
+(13, 6), # Pump 5
+(26, 19), # Pump 6
+(20, 21), # Pump 7
+(15, 14), # Pump 8
+(23, 18), # Pump 9
+(25, 24), # Pump 10
+(7, 8), # Pump 11
+(16, 12) # Pump 12
+
+]
 
 def setup_gpio():
     """Set up all motor pins for OUTPUT."""
