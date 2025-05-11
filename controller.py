@@ -86,7 +86,7 @@ class Pour:
 
     def run(self):
         ia, ib = MOTORS[self.pump_index]
-        seconds_to_pour = self.amount * OZ_COEFFICIENT
+        seconds_to_pour = self.amount * OZ_COEFFICIENT[self.pump_index]
 
         print(f'Pouring {self.amount} oz of Pump {self.pump_index} for {seconds_to_pour:.2f} seconds.')
         motor_forward(ia, ib)
