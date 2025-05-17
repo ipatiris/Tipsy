@@ -147,7 +147,7 @@ def pour_ingredients(ingredients, single_or_double, pump_config):
     executor_watcher = ExecutorWatcher()
     factor = 2 if single_or_double.lower() == "double" else 1
     index = 1
-    for ingredient_name, measurement_str in ingredients.items():
+    for ingredient_name, measurement_str in sorted(ingredients.items(), key=lambda x: x[1], reverse=True):
         parts = measurement_str.split()
         if not parts:
             print(f"Cannot parse measurement for {ingredient_name}. Skipping.")
