@@ -36,6 +36,23 @@ def load_cocktails():
     return {}
 
 
+def get_cocktail_image_path(cocktail):
+    """Given a Cocktail object, get the path to the image for that cocktail.
+    Image file name is assumed to be the normal_name in lower snake_case"""
+    file_name = f'{cocktail.get("normal_name", "").lower().replace(" ", "_")}.png'
+    path = os.path.join(LOGO_FOLDER, file_name)
+    return path
+
+
+def get_valid_cocktails():
+    cocktail_data = load_cocktails().get('cocktails', [])
+    cocktails = []
+    for cocktail in cocktail_data:
+        if os.path.exists(get_cocktail_image_path(cocktail)):
+            cocktails.append(cocktail)
+    return cocktails
+
+
 def save_cocktails(data, append=True):
     """Save the given list of cocktails to the cocktails file."""
     try:

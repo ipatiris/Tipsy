@@ -19,3 +19,5 @@ except ValueError:
 INVERT_PUMP_PINS = os.getenv('INVERT_PUMP_PINS', 'false') == 'true'
 PUMP_CONCURRENCY = int(os.getenv('PUMP_CONCURRENCY', 3))
 FULL_SCREEN = os.getenv('FULL_SCREEN', 'true') == 'true'
+SHOW_RELOAD_COCKTAILS_BUTTON = os.getenv('SHOW_RELOAD_COCKTAILS_BUTTON', 'false') == 'true'
+RELOAD_COCKTAILS_TIMEOUT = int(os.getenv('RELOAD_COCKTAILS_TIMEOUT', 0))

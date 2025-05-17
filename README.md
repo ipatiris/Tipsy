@@ -172,6 +172,8 @@ Several settings can be configured via environment variables, or in a .env file.
 * INVERT_PUMP_PINS: Set to 'true' to invert the direction of your pumps.
 * PUMP_CONCURRENCY: The number of pumps that should run simultaneously.
 * FULL_SCREEN: Set to 'false' to disable full screen mode for the PyGame interface. Useful for debugging.
+* SHOW_RELOAD_COCKTAILS_BUTTON: Set to 'true' to show a reload button for manually reloading the list of cocktails
+* RELOAD_COCKTAILS_TIMEOUT: Set to a positive number of milliseconds to automatically reload the list of cocktails that often. 
 
 ---
 
