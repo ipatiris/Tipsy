@@ -4,10 +4,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-
-CONFIG_FILE = "pump_config.json"
-COCKTAILS_FILE = "cocktails.json"
-LOGO_FOLDER = "drink_logos"
+DEBUG = os.getenv('DEBUG', 'false') == 'true'
+CONFIG_FILE = os.getenv('PUMP_CONFIG_FILE', 'pump_config.json')
+COCKTAILS_FILE = os.getenv('COCKTAILS_FILE', 'cocktails.json')
+LOGO_FOLDER = os.getenv('LOGO_FOLDER', 'drink_logos')
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 

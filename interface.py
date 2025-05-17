@@ -5,6 +5,9 @@ from settings import *
 from helpers import get_cocktail_image_path, get_valid_cocktails
 from controller import make_drink
 
+import logging
+logger = logging.getLogger(__name__)
+
 def animate_text_zoom(screen, base_text, position, start_size, target_size, duration=300, background=None, current_img=None, image_offset=0):
     """Animate overlay text zooming from a small size to target size."""
     clock = pygame.time.Clock()
@@ -190,7 +193,7 @@ def run_interface():
         screen = pygame.display.set_mode((720, 720))
     screen_size = screen.get_size()
     screen_width, screen_height = screen_size
-    pygame.display.set_caption("Cocktail Swipe")
+    pygame.display.set_caption('Cocktail Swipe')
 
     def load_cocktail_image(cocktail):
         """Given a Cocktail object, load the image for that cocktail and scale it to the screen size"""
@@ -200,7 +203,7 @@ def run_interface():
             img = pygame.transform.scale(img, screen_size)
             return img
         except Exception as e:
-            print(f"Error loading {path}: {e}")
+            logger.exception(f'Error loading {path}')
 
     def load_cocktail(index):
         """Load a cocktail based on a provided index. Also pre-load the images for the previous and next cocktails"""
@@ -215,42 +218,41 @@ def run_interface():
 
     # Load the static background image (tipsy.png)
     try:
-        background = pygame.image.load("./tipsy.jpg")
+        background = pygame.image.load('./tipsy.jpg')
         background = pygame.transform.scale(background, screen_size)
     except Exception as e:
-        print("Error loading background image (tipsy.png):", e)
+        logger.exception('Error loading background image (tipsy.png)')
         background = None
     
     cocktails = get_valid_cocktails()
+    if not cocktails:
+        logger.critical('No valid cocktails found in cocktails.json')
+        pygame.quit()
+        return
     current_index = 0
     current_cocktail, current_image, current_cocktail_name, previous_image, next_image = load_cocktail(current_index)
     reload_time = pygame.time.get_ticks()
 
-    if not cocktails:
-        print("No valid cocktails found in cocktails.json")
-        pygame.quit()
-        return
-
     # Load single & double buttons and scale them to 75% of original (base size: 150x150)
     try:
-        single_logo = pygame.image.load("single.png")
+        single_logo = pygame.image.load('single.png')
         single_logo = pygame.transform.scale(single_logo, (150, 150))
     except Exception as e:
-        print("Error loading single.png:", e)
+        logger.exception('Error loading single.png:')
         single_logo = None
     try:
-        double_logo = pygame.image.load("double.png")
+        double_logo = pygame.image.load('double.png')
         double_logo = pygame.transform.scale(double_logo, (150, 150))
     except Exception as e:
-        print("Error loading double.png:", e)
+        logger.exception('Error loading double.png')
         double_logo = None
     if SHOW_RELOAD_COCKTAILS_BUTTON:
         reload_cocktails_rect = pygame.Rect(screen_width - 150, 150, 50, 50)
         try:
-            reload_logo = pygame.image.load("reload.png")
+            reload_logo = pygame.image.load('reload.png')
             reload_logo = pygame.transform.scale(reload_logo, (50, 50))
         except Exception as e:
-            print("Error loading loading.png:", e)
+            logger.exception('Error loading loading.png')
             reload_logo = None
     else:
         reload_cocktails_rect = None
@@ -292,16 +294,16 @@ def run_interface():
                         if single_logo:
                             animate_logo_click(screen, single_logo, single_rect, base_size=150, target_size=220, duration=150, background=background, current_img=current_image)
                         try:
-                            pouring_img = pygame.image.load("pouring.png")
+                            pouring_img = pygame.image.load('pouring.png')
                             pouring_img = pygame.transform.scale(pouring_img, screen_size)
                         except Exception as e:
-                            print("Error loading pouring.png:", e)
+                            logger.exception('Error loading pouring.png')
                             pouring_img = None
                         try:
-                            loading_img = pygame.image.load("loading.png")
+                            loading_img = pygame.image.load('loading.png')
                             loading_img = pygame.transform.scale(loading_img, (720,720))
                         except Exception as e:
-                            print("Error loading loading.png:", e)
+                            logger.exception('Error loading loading.png')
                             loading_img = None
 
                         executor_watcher = make_drink(current_cocktail, 'single')
@@ -314,16 +316,16 @@ def run_interface():
                         if double_logo:
                             animate_logo_click(screen, double_logo, double_rect, base_size=150, target_size=220, duration=150, background=background, current_img=current_image)
                         try:
-                            pouring_img = pygame.image.load("pouring.png")
+                            pouring_img = pygame.image.load('pouring.png')
                             pouring_img = pygame.transform.scale(pouring_img, screen_size)
                         except Exception as e:
-                            print("Error loading pouring.png:", e)
+                            logger.exception('Error loading pouring.png')
                             pouring_img = None
                         try:
-                            loading_img = pygame.image.load("loading.png")
+                            loading_img = pygame.image.load('loading.png')
                             loading_img = pygame.transform.scale(loading_img, (720,720))
                         except Exception as e:
-                            print("Error loading loading.png:", e)
+                            logger.exception('Error loading loading.png')
                             loading_img = None
 
                         executor_watcher = make_drink(current_cocktail, 'double')
@@ -332,7 +334,7 @@ def run_interface():
                             show_pouring_and_loading(screen, pouring_img, loading_img, watcher=executor_watcher, background=background)
                     
                     elif reload_cocktails_rect and reload_cocktails_rect.collidepoint(pos):
-                        print('Reloading cocktails due to reload button press')
+                        logger.debug('Reloading cocktails due to reload button press')
                         animate_logo_rotate(screen, reload_logo, reload_cocktails_rect, background=background)
                         cocktails = get_valid_cocktails()
                         current_cocktail, current_image, current_cocktail_name, previous_image, next_image = load_cocktail(current_index)
@@ -422,7 +424,7 @@ def run_interface():
 
         # Main drawing (when not in special animation)
         if RELOAD_COCKTAILS_TIMEOUT and pygame.time.get_ticks() - reload_time > RELOAD_COCKTAILS_TIMEOUT:
-            print('Reloading cocktails due to auto reload timeout')
+            logger.debug('Reloading cocktails due to auto reload timeout')
             cocktails = get_valid_cocktails()
             current_cocktail, current_image, current_cocktail_name, previous_image, next_image = load_cocktail(current_index)
             reload_time = pygame.time.get_ticks()
@@ -455,5 +457,5 @@ def run_interface():
         clock.tick(60)
     pygame.quit()
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     run_interface()
