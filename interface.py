@@ -1,9 +1,8 @@
 # interface.py
-import os
 import pygame
 
 from settings import *
-from helpers import load_cocktails
+from helpers import get_cocktail_image_path, get_valid_cocktails
 from controller import make_drink
 
 def animate_text_zoom(screen, base_text, position, start_size, target_size, duration=300, background=None, current_img=None, image_offset=0):
@@ -105,6 +104,19 @@ def animate_logo_click(screen, logo, rect, base_size, target_size, duration=150,
             break
         clock.tick(60)
 
+def animate_logo_rotate(screen, logo, rect, rotation=180, background=None):
+    """Animate a logo click (rotate effect): rotate the amount of rotation provided"""
+    angle = 0
+    while angle < rotation:
+        angle = (angle + 5) % 360
+        rotated_loading = pygame.transform.rotate(logo, angle * -1)
+        rotated_rect = rotated_loading.get_rect(center=rect.center)
+        if background:
+            screen.blit(background, (0, 0))
+        # Draw loading image first (under)
+        screen.blit(rotated_loading, rotated_rect)
+        pygame.display.flip()
+
 def animate_both_logos_zoom(screen, single_logo, double_logo, single_rect, double_rect, base_size, target_size, duration=300, background=None, current_img=None):
     """Animate both logos zooming in together and then shrinking back."""
     clock = pygame.time.Clock()
@@ -175,17 +187,10 @@ def run_interface():
     if FULL_SCREEN:
         screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     else:
-        screen = pygame.display.set_mode((0, 0))
+        screen = pygame.display.set_mode((720, 720))
     screen_size = screen.get_size()
     screen_width, screen_height = screen_size
     pygame.display.set_caption("Cocktail Swipe")
-
-    def get_cocktail_image_path(cocktail):
-        """Given a Cocktail object, get the path to the image for that cocktail.
-        Image file name is assumed to be the normal_name in lower snake_case"""
-        file_name = f'{cocktail.get("normal_name", "").lower().replace(" ", "_")}.png'
-        path = os.path.join(LOGO_FOLDER, file_name)
-        return path
 
     def load_cocktail_image(cocktail):
         """Given a Cocktail object, load the image for that cocktail and scale it to the screen size"""
@@ -208,8 +213,6 @@ def run_interface():
         next_image = load_cocktail_image(next_cocktail)
         return current_cocktail, current_image, current_cocktail_name, previous_image, next_image
 
-    cocktail_data = load_cocktails().get('cocktails', [])
-
     # Load the static background image (tipsy.png)
     try:
         background = pygame.image.load("./tipsy.jpg")
@@ -218,20 +221,15 @@ def run_interface():
         print("Error loading background image (tipsy.png):", e)
         background = None
     
-    cocktails = []
-
-    for cocktail in cocktail_data:
-        if os.path.exists(get_cocktail_image_path(cocktail)):
-            cocktails.append(cocktail)
+    cocktails = get_valid_cocktails()
+    current_index = 0
+    current_cocktail, current_image, current_cocktail_name, previous_image, next_image = load_cocktail(current_index)
+    reload_time = pygame.time.get_ticks()
 
     if not cocktails:
         print("No valid cocktails found in cocktails.json")
         pygame.quit()
         return
-    
-    current_index = 0
-
-    current_cocktail, current_image, current_cocktail_name, previous_image, next_image = load_cocktail(current_index)
 
     # Load single & double buttons and scale them to 75% of original (base size: 150x150)
     try:
@@ -246,6 +244,17 @@ def run_interface():
     except Exception as e:
         print("Error loading double.png:", e)
         double_logo = None
+    if SHOW_RELOAD_COCKTAILS_BUTTON:
+        reload_cocktails_rect = pygame.Rect(screen_width - 150, 150, 50, 50)
+        try:
+            reload_logo = pygame.image.load("reload.png")
+            reload_logo = pygame.transform.scale(reload_logo, (50, 50))
+        except Exception as e:
+            print("Error loading loading.png:", e)
+            reload_logo = None
+    else:
+        reload_cocktails_rect = None
+        reload_logo = None
 
     # Position extra logos: single on left, double on right, spaced more toward edges.
     margin = 50  # adjust as needed for spacing
@@ -321,6 +330,12 @@ def run_interface():
 
                         if pouring_img and loading_img:
                             show_pouring_and_loading(screen, pouring_img, loading_img, watcher=executor_watcher, background=background)
+                    
+                    elif reload_cocktails_rect and reload_cocktails_rect.collidepoint(pos):
+                        print('Reloading cocktails due to reload button press')
+                        animate_logo_rotate(screen, reload_logo, reload_cocktails_rect, background=background)
+                        cocktails = get_valid_cocktails()
+                        current_cocktail, current_image, current_cocktail_name, previous_image, next_image = load_cocktail(current_index)
                         
                     dragging = False
                     drag_offset = 0
@@ -360,6 +375,8 @@ def run_interface():
                             screen.blit(single_logo, single_rect)
                         if double_logo:
                             screen.blit(double_logo, double_rect)
+                        if reload_logo:
+                            screen.blit(reload_logo, reload_cocktails_rect)
                         pygame.display.flip()
                         if progress >= 1.0:
                             break
@@ -394,6 +411,8 @@ def run_interface():
                             screen.blit(single_logo, single_rect)
                         if double_logo:
                             screen.blit(double_logo, double_rect)
+                        if reload_logo:
+                            screen.blit(reload_logo, reload_cocktails_rect)
                         pygame.display.flip()
                         if progress >= 1.0:
                             break
@@ -402,6 +421,12 @@ def run_interface():
                 drag_offset = 0
 
         # Main drawing (when not in special animation)
+        if RELOAD_COCKTAILS_TIMEOUT and pygame.time.get_ticks() - reload_time > RELOAD_COCKTAILS_TIMEOUT:
+            print('Reloading cocktails due to auto reload timeout')
+            cocktails = get_valid_cocktails()
+            current_cocktail, current_image, current_cocktail_name, previous_image, next_image = load_cocktail(current_index)
+            reload_time = pygame.time.get_ticks()
+
         if background:
             screen.blit(background, (0, 0))
         else:
@@ -424,6 +449,8 @@ def run_interface():
             screen.blit(single_logo, single_rect)
         if double_logo:
             screen.blit(double_logo, double_rect)
+        if reload_logo:
+            screen.blit(reload_logo, reload_cocktails_rect)
         pygame.display.flip()
         clock.tick(60)
     pygame.quit()
