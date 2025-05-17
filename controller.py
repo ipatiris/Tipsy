@@ -69,7 +69,7 @@ def motor_stop(ia, ib):
 
 def motor_reverse(ia,ib):
     if DEBUG:
-        logger.debug('Debug reverse')
+        logger.debug(f'motor_reverse(ia={ia}, ib={ib}) called — No actual motor movement.')
     else:
         if INVERT_PUMP_PINS:
             GPIO.output(ia,GPIO.HIGH)
@@ -88,9 +88,19 @@ class Pour:
         ia, ib = MOTORS[self.pump_index]
         seconds_to_pour = self.amount * OZ_COEFFICIENT
 
+        if RETRACTION_TIME:
+            logger.debug(f'Retraction time is set to {RETRACTION_TIME:.2f} seconds. Adding this time to pour time')
+            seconds_to_pour = seconds_to_pour + RETRACTION_TIME
+
         logger.info(f'Pouring {self.amount} oz of Pump {self.pump_index} for {seconds_to_pour:.2f} seconds.')
         motor_forward(ia, ib)
         time.sleep(seconds_to_pour)
+
+        if RETRACTION_TIME:
+            logger.info(f'Retracting Pump {self.pump_index} for {RETRACTION_TIME:.2f} seconds')
+            motor_reverse(ia, ib)
+            time.sleep(RETRACTION_TIME)
+
         motor_stop(ia, ib)
 
 
