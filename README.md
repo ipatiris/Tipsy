@@ -168,12 +168,14 @@ The `controller.py` script will:
 
 Several settings can be configured via environment variables, or in a .env file.
 * OPENAI_API_KEY: Your API key for OpenAI. This is set when you first run the streamlit app.
+* DEBUG: Set to 'true' to enable debug logging and disable motor control
 * OZ_COEFFICIENT: The number of seconds required for your pumps to pour 1oz of liquid.
 * INVERT_PUMP_PINS: Set to 'true' to invert the direction of your pumps.
 * PUMP_CONCURRENCY: The number of pumps that should run simultaneously.
 * FULL_SCREEN: Set to 'false' to disable full screen mode for the PyGame interface. Useful for debugging.
 * SHOW_RELOAD_COCKTAILS_BUTTON: Set to 'true' to show a reload button for manually reloading the list of cocktails
-* RELOAD_COCKTAILS_TIMEOUT: Set to a positive number of milliseconds to automatically reload the list of cocktails that often. 
+* RELOAD_COCKTAILS_TIMEOUT: Set to a number of milliseconds to automatically reload the list of cocktails that often.
+* RETRACTION_TIME: Set to a number of seconds to reverse the motors at the end of a pour. This should help prevent buildup on the ends of the tubing.
 
 ---
 
