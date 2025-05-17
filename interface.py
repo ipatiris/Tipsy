@@ -212,7 +212,7 @@ def run_interface():
 
     # Load the static background image (tipsy.png)
     try:
-        background = pygame.image.load("./tipsy.png")
+        background = pygame.image.load("./tipsy.jpg")
         background = pygame.transform.scale(background, screen_size)
     except Exception as e:
         print("Error loading background image (tipsy.png):", e)
