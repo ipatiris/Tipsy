@@ -76,7 +76,7 @@ def get_safe_name(name):
     return name.lower().replace(' ', '_')
 
 
-def generate_image(normal_name, regenerate=False):
+def generate_image(normal_name, regenerate=False, ingredients=None):
     safe_cname = get_safe_name(normal_name)
     filename = os.path.join(LOGO_FOLDER, f'{safe_cname}.png')
 
@@ -89,8 +89,12 @@ def generate_image(normal_name, regenerate=False):
             background_color = 'transparent'
         prompt = (
             f'A realistic illustration of a {normal_name} cocktail on a {background_color} background. '
-            'The lighting and shading create depth and realism, making the drink appear fresh and inviting.'
+            'The lighting and shading create depth and realism, making the drink appear fresh and inviting. '
+            'Do not include shadows, reflections, or the cocktail name in the image.'
         )
+        logger.critical(f'{ingredients}')
+        if ingredients:
+            prompt = f'{prompt} The cocktail ingredients are: {[ingredient for ingredient in ingredients].join(", ")}'
         try:
             # Generate the image URL
             b64_image = assist.generate_image(prompt)
