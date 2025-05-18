@@ -94,7 +94,7 @@ def generate_image(normal_name, regenerate=False, ingredients=None):
         )
         logger.critical(f'{ingredients}')
         if ingredients:
-            prompt = f'{prompt} The cocktail ingredients are: {[ingredient for ingredient in ingredients].join(", ")}'
+            prompt = f'{prompt} The cocktail ingredients are: {", ".join([ingredient for ingredient in ingredients])}'
         try:
             # Generate the image URL
             b64_image = assist.generate_image(prompt)
