@@ -102,7 +102,7 @@ with tabs[0]:
 
         for idx, cocktail in enumerate(cocktails):
             normal_name = cocktail.get('normal_name', 'unknown_drink')
-            generate_image(normal_name)
+            generate_image(normal_name, False, cocktail['ingredients'])
             progress_bar.progress((idx + 1) / total)
 
         progress_bar.empty()
@@ -297,5 +297,5 @@ with tabs[3]:
 
     if st.button('Save') and recipe['normal_name'] and len(recipe['ingredients']) > 0:
         if recipe['normal_name'] not in list(map(lambda x: x['normal_name'], cocktail_data['cocktails'])):
-            generate_image(recipe['normal_name'])
+            generate_image(recipe['normal_name'], False, recipe['ingredients'])
             save_cocktails({'cocktails': [recipe]})
