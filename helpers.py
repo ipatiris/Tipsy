@@ -92,7 +92,6 @@ def generate_image(normal_name, regenerate=False, ingredients=None):
             'The lighting and shading create depth and realism, making the drink appear fresh and inviting. '
             'Do not include shadows, reflections, or the cocktail name in the image.'
         )
-        logger.critical(f'{ingredients}')
         if ingredients:
             prompt = f'{prompt} The cocktail ingredients are: {", ".join([ingredient for ingredient in ingredients])}'
         try:
