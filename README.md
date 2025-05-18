@@ -176,6 +176,7 @@ Several settings can be configured via environment variables, or in a .env file.
 * SHOW_RELOAD_COCKTAILS_BUTTON: Set to 'true' to show a reload button for manually reloading the list of cocktails
 * RELOAD_COCKTAILS_TIMEOUT: Set to a number of milliseconds to automatically reload the list of cocktails that often.
 * RETRACTION_TIME: Set to a number of seconds to reverse the motors at the end of a pour. This should help prevent buildup on the ends of the tubing.
+* USE_GPT_TRANSPARENCY: Set to 'true' to enable native image transparency in OpenAI. This should produce more consistent image results. This uses the `gpt-image-1` model. Your organization must be verified to use the model `gpt-image-1`. Please go to: https://platform.openai.com/settings/organization/general and click on Verify Organization. If you just verified, it can take up to 15 minutes for access to propagate.
 
 ---
 
