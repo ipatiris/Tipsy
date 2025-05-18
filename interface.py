@@ -115,7 +115,7 @@ def animate_both_logos_zoom(single_logo, double_logo, single_rect, double_rect, 
             break
         clock.tick(60)
 
-def show_pouring_and_loading(screen, pouring_img, loading_img, watcher, background=None):
+def show_pouring_and_loading(screen, pouring_img, loading_img, watcher):
     """Overlay pouring_img full screen and a spinning loading_img (720x720) drawn underneath."""
     angle = 0
     screen_size = screen.get_size()
@@ -136,7 +136,7 @@ def show_pouring_and_loading(screen, pouring_img, loading_img, watcher, backgrou
     remove_layer('pouring')
     remove_layer('pouring_background')
     draw_frame()
-
+    pygame.event.clear()  # Drop all events that happened while pouring
 
 def run_interface():
 
@@ -256,7 +256,7 @@ def run_interface():
                         executor_watcher = make_drink(current_cocktail, 'single')
 
                         if pouring_img and loading_img:
-                            show_pouring_and_loading(screen, pouring_img, loading_img, watcher=executor_watcher, background=background)
+                            show_pouring_and_loading(screen, pouring_img, loading_img, watcher=executor_watcher)
 
                     elif double_rect.collidepoint(pos):
                         # Animate double logo click
@@ -278,7 +278,7 @@ def run_interface():
                         executor_watcher = make_drink(current_cocktail, 'double')
 
                         if pouring_img and loading_img:
-                            show_pouring_and_loading(screen, pouring_img, loading_img, watcher=executor_watcher, background=background)
+                            show_pouring_and_loading(screen, pouring_img, loading_img, watcher=executor_watcher)
                     
                     elif reload_cocktails_rect and reload_cocktails_rect.collidepoint(pos):
                         logger.debug('Reloading cocktails due to reload button press')
