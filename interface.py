@@ -8,7 +8,7 @@ from controller import make_drink
 import logging
 logger = logging.getLogger(__name__)
 
-def animate_text_zoom(screen, base_text, position, start_size, target_size, duration=300, background=None, current_img=None, image_offset=0):
+def animate_text_zoom(screen, base_text, position, start_size, target_size, duration=300, background=None, current_img=None, image_offset=0, cocktail_image_offset=0):
     """Animate overlay text zooming from a small size to target size."""
     clock = pygame.time.Clock()
     start_time = pygame.time.get_ticks()
@@ -22,14 +22,14 @@ def animate_text_zoom(screen, base_text, position, start_size, target_size, dura
         if background:
             screen.blit(background, (0, 0))
         if current_img:
-            screen.blit(current_img, (image_offset, 0))
+            screen.blit(current_img, (image_offset + cocktail_image_offset, cocktail_image_offset))
         screen.blit(text_surface, text_rect)
         pygame.display.flip()
         if progress >= 1.0:
             break
         clock.tick(60)
 
-def animate_logo_zoom(screen, logo, rect, base_size, target_size, duration=300, background=None, current_img=None):
+def animate_logo_zoom(screen, logo, rect, base_size, target_size, duration=300, background=None, current_img=None, cocktail_image_offset=0):
     """Animate one logo zooming from base_size to target_size and back."""
     clock = pygame.time.Clock()
     center = rect.center
@@ -44,7 +44,7 @@ def animate_logo_zoom(screen, logo, rect, base_size, target_size, duration=300, 
         if background:
             screen.blit(background, (0, 0))
         if current_img:
-            screen.blit(current_img, (0, 0))
+            screen.blit(current_img, (cocktail_image_offset, cocktail_image_offset))
         screen.blit(scaled_img, new_rect)
         pygame.display.flip()
         if progress >= 1.0:
@@ -61,14 +61,14 @@ def animate_logo_zoom(screen, logo, rect, base_size, target_size, duration=300, 
         if background:
             screen.blit(background, (0, 0))
         if current_img:
-            screen.blit(current_img, (0, 0))
+            screen.blit(current_img, (cocktail_image_offset, cocktail_image_offset))
         screen.blit(scaled_img, new_rect)
         pygame.display.flip()
         if progress >= 1.0:
             break
         clock.tick(60)
 
-def animate_logo_click(screen, logo, rect, base_size, target_size, duration=150, background=None, current_img=None):
+def animate_logo_click(screen, logo, rect, base_size, target_size, duration=150, background=None, current_img=None, cocktail_image_offset=0):
     """Animate a logo click (pop effect): grow from base_size to target_size then shrink back."""
     clock = pygame.time.Clock()
     center = rect.center
@@ -83,7 +83,7 @@ def animate_logo_click(screen, logo, rect, base_size, target_size, duration=150,
         if background:
             screen.blit(background, (0, 0))
         if current_img:
-            screen.blit(current_img, (0, 0))
+            screen.blit(current_img, (cocktail_image_offset, cocktail_image_offset))
         screen.blit(scaled_img, new_rect)
         pygame.display.flip()
         if progress >= 1.0:
@@ -100,7 +100,7 @@ def animate_logo_click(screen, logo, rect, base_size, target_size, duration=150,
         if background:
             screen.blit(background, (0, 0))
         if current_img:
-            screen.blit(current_img, (0, 0))
+            screen.blit(current_img, (cocktail_image_offset, cocktail_image_offset))
         screen.blit(scaled_img, new_rect)
         pygame.display.flip()
         if progress >= 1.0:
@@ -120,7 +120,7 @@ def animate_logo_rotate(screen, logo, rect, rotation=180, background=None):
         screen.blit(rotated_loading, rotated_rect)
         pygame.display.flip()
 
-def animate_both_logos_zoom(screen, single_logo, double_logo, single_rect, double_rect, base_size, target_size, duration=300, background=None, current_img=None):
+def animate_both_logos_zoom(screen, single_logo, double_logo, single_rect, double_rect, base_size, target_size, duration=300, background=None, current_img=None, cocktail_image_offset=0):
     """Animate both logos zooming in together and then shrinking back."""
     clock = pygame.time.Clock()
     center_single = single_rect.center
@@ -138,7 +138,7 @@ def animate_both_logos_zoom(screen, single_logo, double_logo, single_rect, doubl
         if background:
             screen.blit(background, (0, 0))
         if current_img:
-            screen.blit(current_img, (0, 0))
+            screen.blit(current_img, (cocktail_image_offset, cocktail_image_offset))
         screen.blit(scaled_single, new_rect_single)
         screen.blit(scaled_double, new_rect_double)
         pygame.display.flip()
@@ -158,7 +158,7 @@ def animate_both_logos_zoom(screen, single_logo, double_logo, single_rect, doubl
         if background:
             screen.blit(background, (0, 0))
         if current_img:
-            screen.blit(current_img, (0, 0))
+            screen.blit(current_img, (cocktail_image_offset, cocktail_image_offset))
         screen.blit(scaled_single, new_rect_single)
         screen.blit(scaled_double, new_rect_double)
         pygame.display.flip()
@@ -193,6 +193,7 @@ def run_interface():
         screen = pygame.display.set_mode((720, 720))
     screen_size = screen.get_size()
     screen_width, screen_height = screen_size
+    cocktail_image_offset = screen_width * (1.0 - COCKTAIL_IMAGE_SCALE) // 2
     pygame.display.set_caption('Cocktail Swipe')
 
     def load_cocktail_image(cocktail):
@@ -200,7 +201,7 @@ def run_interface():
         path = get_cocktail_image_path(cocktail)
         try:
             img = pygame.image.load(path)
-            img = pygame.transform.scale(img, screen_size)
+            img = pygame.transform.scale(img, (screen_width * COCKTAIL_IMAGE_SCALE, screen_height * COCKTAIL_IMAGE_SCALE))
             return img
         except Exception as e:
             logger.exception(f'Error loading {path}')
@@ -292,7 +293,7 @@ def run_interface():
                     if single_rect.collidepoint(pos):
                         # Animate single logo click
                         if single_logo:
-                            animate_logo_click(screen, single_logo, single_rect, base_size=150, target_size=220, duration=150, background=background, current_img=current_image)
+                            animate_logo_click(screen, single_logo, single_rect, base_size=150, target_size=220, duration=150, background=background, current_img=current_image, cocktail_image_offset=cocktail_image_offset)
                         try:
                             pouring_img = pygame.image.load('pouring.png')
                             pouring_img = pygame.transform.scale(pouring_img, screen_size)
@@ -314,7 +315,7 @@ def run_interface():
                     elif double_rect.collidepoint(pos):
                         # Animate double logo click
                         if double_logo:
-                            animate_logo_click(screen, double_logo, double_rect, base_size=150, target_size=220, duration=150, background=background, current_img=current_image)
+                            animate_logo_click(screen, double_logo, double_rect, base_size=150, target_size=220, duration=150, background=background, current_img=current_image, cocktail_image_offset=cocktail_image_offset)
                         try:
                             pouring_img = pygame.image.load('pouring.png')
                             pouring_img = pygame.transform.scale(pouring_img, screen_size)
@@ -361,11 +362,11 @@ def run_interface():
                             screen.blit(background, (0, 0))
                         else:
                             screen.fill((0, 0, 0))
-                        screen.blit(current_image, (current_offset, 0))
+                        screen.blit(current_image, (current_offset + cocktail_image_offset, cocktail_image_offset))
                         if drag_offset < 0:
-                            screen.blit(next_image, (screen_width + current_offset, 0))
+                            screen.blit(next_image, (screen_width + current_offset + cocktail_image_offset, cocktail_image_offset))
                         else:
-                            screen.blit(previous_image, (-screen_width + current_offset, 0))
+                            screen.blit(previous_image, (-screen_width + current_offset + cocktail_image_offset, cocktail_image_offset))
                         # Draw overlay text at normal size.
                         font = pygame.font.SysFont(None, normal_text_size)
                         drink_name = current_cocktail_name
@@ -388,7 +389,7 @@ def run_interface():
 
                     # Animate both extra logos zooming together.
                     if single_logo and double_logo:
-                        animate_both_logos_zoom(screen, single_logo, double_logo, single_rect, double_rect, base_size=150, target_size=175, duration=300, background=background, current_img=current_image)
+                        animate_both_logos_zoom(screen, single_logo, double_logo, single_rect, double_rect, base_size=150, target_size=175, duration=300, background=background, current_img=current_image, cocktail_image_offset=cocktail_image_offset)
                 else:
                     # Animate snapping back if swipe is insufficient.
                     start_offset = drag_offset
@@ -402,7 +403,7 @@ def run_interface():
                             screen.blit(background, (0, 0))
                         else:
                             screen.fill((0, 0, 0))
-                        screen.blit(current_image, (current_offset, 0))
+                        screen.blit(current_image, (current_offset + cocktail_image_offset, cocktail_image_offset))
                         font = pygame.font.SysFont(None, normal_text_size)
                         drink_name = current_cocktail_name
                         text_surface = font.render(drink_name, True, (255, 255, 255))
@@ -434,13 +435,13 @@ def run_interface():
         else:
             screen.fill((0, 0, 0))
         if dragging:
-            screen.blit(current_image, (drag_offset, 0))
+            screen.blit(current_image, (drag_offset + cocktail_image_offset, cocktail_image_offset))
             if drag_offset < 0:
-                screen.blit(next_image, (screen_width + drag_offset, 0))
+                screen.blit(next_image, (screen_width + drag_offset + cocktail_image_offset, cocktail_image_offset))
             elif drag_offset > 0:
-                screen.blit(previous_image, (-screen_width + drag_offset, 0))
+                screen.blit(previous_image, (-screen_width + drag_offset + cocktail_image_offset, cocktail_image_offset))
         else:
-            screen.blit(current_image, (0, 0))
+            screen.blit(current_image, (cocktail_image_offset, cocktail_image_offset))
         font = pygame.font.SysFont(None, normal_text_size)
         drink_name = current_cocktail_name
         text_surface = font.render(drink_name, True, (255, 255, 255))
