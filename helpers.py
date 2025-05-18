@@ -1,3 +1,4 @@
+import base64
 import os
 import json
 import streamlit as st
@@ -7,32 +8,35 @@ import requests
 from rembg import remove
 from PIL import Image
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 def load_saved_config():
     if os.path.exists(CONFIG_FILE):
         try:
-            with open(CONFIG_FILE, "r") as f:
+            with open(CONFIG_FILE, 'r') as f:
                 return json.load(f)
         except Exception as e:
-            st.error(f"Error loading configuration: {e}")
+            st.error(f'Error loading configuration: {e}')
     return {}
 
 
 def save_config(data):
     try:
-        with open(CONFIG_FILE, "w") as f:
+        with open(CONFIG_FILE, 'w') as f:
             json.dump(data, f, indent=2)
     except Exception as e:
-        st.error(f"Error saving configuration: {e}")
+        st.error(f'Error saving configuration: {e}')
 
 
 def load_cocktails():
     if os.path.exists(COCKTAILS_FILE):
         try:
-            with open(COCKTAILS_FILE, "r") as f:
+            with open(COCKTAILS_FILE, 'r') as f:
                 return json.load(f)
         except Exception as e:
-            st.error(f"Error loading cocktails: {e}")
+            st.error(f'Error loading cocktails: {e}')
     return {}
 
 
@@ -57,45 +61,70 @@ def save_cocktails(data, append=True):
     """Save the given list of cocktails to the cocktails file."""
     try:
         cocktails = load_cocktails()
-        with open(COCKTAILS_FILE, "w") as f:
+        with open(COCKTAILS_FILE, 'w') as f:
             if append:
                 cocktails['cocktails'] += data['cocktails']
             else:
                 cocktails = data
             json.dump(cocktails, f, indent=2)
     except Exception as e:
-        st.error(f"Error saving cocktails: {e}")
+        st.error(f'Error saving cocktails: {e}')
 
 
 def get_safe_name(name):
     """Convert a cocktail name to a safe filename-friendly string."""
-    return name.lower().replace(" ", "_")
+    return name.lower().replace(' ', '_')
 
 
-def generate_image(normal_name):
+def generate_image(normal_name, regenerate=False):
     safe_cname = get_safe_name(normal_name)
-    filename = os.path.join(LOGO_FOLDER, f"{safe_cname}.png")
+    filename = os.path.join(LOGO_FOLDER, f'{safe_cname}.png')
 
-    if os.path.exists(filename):
+    if not regenerate and os.path.exists(filename):
         # If it already exists, skip generation
         return filename
     else:
+        background_color = 'plain white'
+        if USE_GPT_TRANSPARENCY:
+            background_color = 'transparent'
         prompt = (
-            f"A realistic illustration of a {normal_name} cocktail on a plain white background. "
-            "The lighting and shading create depth and realism, making the drink appear fresh and inviting."
+            f'A realistic illustration of a {normal_name} cocktail on a {background_color} background. '
+            'The lighting and shading create depth and realism, making the drink appear fresh and inviting.'
         )
         try:
-            # 1) Generate the image URL
-            image_url = assist.generate_image(prompt)
+            # Generate the image URL
+            b64_image = assist.generate_image(prompt)
+            logger.debug(f'Image generated for {normal_name}')
 
-            # 2) Download + remove background in memory
-            img_data = requests.get(image_url).content
-            from io import BytesIO
-            with Image.open(BytesIO(img_data)).convert("RGBA") as original_img:
-                bg_removed = remove(original_img)
-                bg_removed.save(filename, "PNG")
+            if USE_GPT_TRANSPARENCY:
+                save_base64_image(b64_image, filename)
+            else:
+                # Download + remove background in memory
+                logger.debug(f'Removing background from image for {normal_name}')
+                from io import BytesIO
+                with Image.open(BytesIO(base64.b64decode(b64_image))) as original_img:
+                    img = remove(original_img.convert('RGBA'))
+                    logger.debug(f'Saving image with removed background for {normal_name}')
+                    img.save(filename, 'PNG')
 
             return filename
 
         except Exception as e:
-            pass
+            logger.exception('Image generation error')
+
+
+def save_base64_image(base64_string, output_path):
+    """
+    Decodes a base64 string and saves it as an image file.
+
+    Args:
+        base64_string: The base64 encoded string of the image.
+        output_path: The path to save the image file.
+    """
+    try:
+        image_data = base64.b64decode(base64_string)
+        with open(output_path, 'wb') as file:
+            file.write(image_data)
+        logger.debug(f'Image saved to {output_path}')
+    except Exception as e:
+        logger.exception(f'Error decoding or saving image')

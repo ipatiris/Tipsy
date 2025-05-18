@@ -26,3 +26,4 @@ FULL_SCREEN = os.getenv('FULL_SCREEN', 'true') == 'true'
 SHOW_RELOAD_COCKTAILS_BUTTON = os.getenv('SHOW_RELOAD_COCKTAILS_BUTTON', 'false') == 'true'
 RELOAD_COCKTAILS_TIMEOUT = int(os.getenv('RELOAD_COCKTAILS_TIMEOUT', 0))
 RETRACTION_TIME = float(os.getenv('RETRACTION_TIME', '0'))
+USE_GPT_TRANSPARENCY=os.getenv('USE_GPT_TRANSPARENCY', 'false') == 'true'
