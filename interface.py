@@ -18,6 +18,10 @@ screen_width, screen_height = screen_size
 cocktail_image_offset = screen_width * (1.0 - COCKTAIL_IMAGE_SCALE) // 2
 pygame.display.set_caption('Cocktail Swipe')
 
+normal_text_size = 72
+small_text_size = int(normal_text_size // 1.5)
+text_position = (screen_width // 2, int(screen_height * 0.85))
+
 def add_layer(*args, function=screen.blit, key=None):
     if key == None:
         key = len(layers)
@@ -115,24 +119,73 @@ def animate_both_logos_zoom(single_logo, double_logo, single_rect, double_rect, 
             break
         clock.tick(60)
 
-def show_pouring_and_loading(screen, pouring_img, loading_img, watcher):
+def show_pouring_and_loading(watcher):
     """Overlay pouring_img full screen and a spinning loading_img (720x720) drawn underneath."""
+    try:
+        pouring_img = pygame.image.load('pouring.png')
+        pouring_img = pygame.transform.scale(pouring_img, screen_size)
+    except Exception as e:
+        logger.exception('Error loading pouring.png')
+        pouring_img = None
+    try:
+        loading_img = pygame.image.load('loading.png')
+        loading_img = pygame.transform.scale(loading_img, (100, 100))
+    except Exception as e:
+        logger.exception('Error loading loading.png')
+        loading_img = None
+    try:
+        checkmark_img = pygame.image.load('checkmark.png')
+        checkmark_img = pygame.transform.scale(checkmark_img, (30, 30))
+    except Exception as e:
+        logger.exception('Error loading loading.png')
+        checkmark_img = None
+        
     angle = 0
-    screen_size = screen.get_size()
-    screen_width, screen_height = screen_size
-    while True:
-        if watcher.done():
-            break
+
+    # Add a background layer
+    add_layer(*layers['background']['args'], function=layers['background']['function'], key='pouring_background')
+    # Then draw pouring image on top
+    if pouring_img:
+        add_layer(pouring_img, (0, -150), key='pouring')
+
+    pour_layers = []
+    while not watcher.done():
         angle = (angle + 5) % 360
-        rotated_loading = pygame.transform.rotate(loading_img, angle)
-        rotated_rect = rotated_loading.get_rect(center=(screen_width // 2, screen_height // 2))
-        add_layer(*layers['background']['args'], function=layers['background']['function'], key='pouring_background')
-        # Draw loading image first (under)
-        add_layer(rotated_loading, rotated_rect, key='loading')
-        # Then draw pouring image on top
-        add_layer(pouring_img, (0, 0), key='pouring')
+        if loading_img:
+            rotated_loading = pygame.transform.rotate(loading_img, angle)
+        
+        for index, pour in enumerate(watcher.pours):
+            layer_key = f'pour_{index}'
+            logo_layer_key = f'{layer_key}_logo'
+
+            x_position = text_position[0] - 100
+            y_position = (text_position[1] + small_text_size * index) - 325
+
+            if layer_key not in pour_layers:
+                pour_layers.append(layer_key)
+                
+                font = pygame.font.SysFont(None, small_text_size)
+                text_surface = font.render(str(pour), True, (255, 255, 255))
+                
+                text_rect = text_surface.get_rect(topleft=(x_position, y_position))
+                add_layer(text_surface, text_rect, key=layer_key)
+                pour_layers.append(logo_layer_key)
+            if pour.running and loading_img:
+                rect = rotated_loading.get_rect(center=(x_position - small_text_size // 2, y_position - 7 + small_text_size // 2))
+                add_layer(rotated_loading, rect, key=logo_layer_key)
+            else:
+                if checkmark_img:
+                    rect = checkmark_img.get_rect(center=(x_position - small_text_size // 2, y_position - 7 + small_text_size // 2))
+                    add_layer(checkmark_img, rect, key=logo_layer_key)
+                else:
+                    remove_layer(logo_layer_key)
+                    
+
         draw_frame()
-    remove_layer('loading')
+
+    for layer in pour_layers:
+        remove_layer(layer)
+
     remove_layer('pouring')
     remove_layer('pouring_background')
     draw_frame()
@@ -215,9 +268,6 @@ def run_interface():
     drag_offset = 0
     clock = pygame.time.Clock()
 
-    normal_text_size = 72  
-    text_position = (screen_width // 2, int(screen_height * 0.85))
-
     running = True
     while running:
         for event in pygame.event.get():
@@ -240,45 +290,19 @@ def run_interface():
                         # Animate single logo click
                         if single_logo:
                             animate_logo_click(single_logo, single_rect, base_size=150, target_size=220, layer_key='single_logo', duration=150)
-                        try:
-                            pouring_img = pygame.image.load('pouring.png')
-                            pouring_img = pygame.transform.scale(pouring_img, screen_size)
-                        except Exception as e:
-                            logger.exception('Error loading pouring.png')
-                            pouring_img = None
-                        try:
-                            loading_img = pygame.image.load('loading.png')
-                            loading_img = pygame.transform.scale(loading_img, (720,720))
-                        except Exception as e:
-                            logger.exception('Error loading loading.png')
-                            loading_img = None
 
                         executor_watcher = make_drink(current_cocktail, 'single')
 
-                        if pouring_img and loading_img:
-                            show_pouring_and_loading(screen, pouring_img, loading_img, watcher=executor_watcher)
+                        show_pouring_and_loading(watcher=executor_watcher)
 
                     elif double_rect.collidepoint(pos):
                         # Animate double logo click
                         if double_logo:
                             animate_logo_click(double_logo, double_rect, base_size=150, target_size=220, layer_key='double_logo', duration=150)
-                        try:
-                            pouring_img = pygame.image.load('pouring.png')
-                            pouring_img = pygame.transform.scale(pouring_img, screen_size)
-                        except Exception as e:
-                            logger.exception('Error loading pouring.png')
-                            pouring_img = None
-                        try:
-                            loading_img = pygame.image.load('loading.png')
-                            loading_img = pygame.transform.scale(loading_img, (720,720))
-                        except Exception as e:
-                            logger.exception('Error loading loading.png')
-                            loading_img = None
 
                         executor_watcher = make_drink(current_cocktail, 'double')
 
-                        if pouring_img and loading_img:
-                            show_pouring_and_loading(screen, pouring_img, loading_img, watcher=executor_watcher)
+                        show_pouring_and_loading(executor_watcher)
                     
                     elif reload_cocktails_rect and reload_cocktails_rect.collidepoint(pos):
                         logger.debug('Reloading cocktails due to reload button press')
@@ -359,11 +383,10 @@ def run_interface():
             remove_layer('next_cocktail')
             remove_layer('previous_cocktail')
             add_layer(current_image, (cocktail_image_offset, cocktail_image_offset), key='current_cocktail')
-            current_text_position = text_position
             font = pygame.font.SysFont(None, normal_text_size)
             drink_name = current_cocktail_name
             text_surface = font.render(drink_name, True, (255, 255, 255))
-            text_rect = text_surface.get_rect(center=current_text_position)
+            text_rect = text_surface.get_rect(center=text_position)
             add_layer(text_surface, text_rect, key='cocktail_name')
         draw_frame()
         clock.tick(60)

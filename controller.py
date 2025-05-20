@@ -80,11 +80,17 @@ def motor_reverse(ia,ib):
 
 
 class Pour:
-    def __init__(self, pump_index, amount):
+    def __str__(self):
+        return f'{self.ingredient_name}: {self.amount} oz.'
+
+    def __init__(self, pump_index, amount, ingredient_name):
         self.pump_index = pump_index
         self.amount = amount
+        self.ingredient_name = ingredient_name
+        self.running = False
 
     def run(self):
+        self.running = True
         ia, ib = MOTORS[self.pump_index]
         seconds_to_pour = self.amount * OZ_COEFFICIENT
 
@@ -102,6 +108,7 @@ class Pour:
             time.sleep(RETRACTION_TIME)
 
         motor_stop(ia, ib)
+        self.running = False
 
 
 def prime_pumps(duration=10):
@@ -145,6 +152,7 @@ class ExecutorWatcher:
 
     def __init__(self):
         self.executors = []
+        self.pours = []
 
     def done(self):
         if any([not executor.done() for executor in self.executors]):
@@ -152,7 +160,7 @@ class ExecutorWatcher:
         return True
 
 
-def pour_ingredients(ingredients, single_or_double, pump_config):
+def pour_ingredients(ingredients, single_or_double, pump_config, parent_watcher):
     executor = concurrent.futures.ThreadPoolExecutor()
     executor_watcher = ExecutorWatcher()
     factor = 2 if single_or_double.lower() == 'double' else 1
@@ -193,7 +201,9 @@ def pour_ingredients(ingredients, single_or_double, pump_config):
             logger.critical(f'Pump index {pump_index} out of range for "{ingredient_name}". Skipping.')
             continue
 
-        executor_watcher.executors.append(executor.submit(Pour(pump_index, oz_needed).run))
+        pour = Pour(pump_index, oz_needed, ingredient_name)
+        parent_watcher.pours.append(pour)
+        executor_watcher.executors.append(executor.submit(pour.run))
 
         if index % PUMP_CONCURRENCY == 0:
             while not executor_watcher.done():
@@ -238,6 +248,6 @@ def make_drink(recipe, single_or_double="single"):
     setup_gpio()
     executor = concurrent.futures.ThreadPoolExecutor()
     executor_watcher = ExecutorWatcher()
-    executor_watcher.executors.append(executor.submit(pour_ingredients, ingredients, single_or_double, pump_config))
+    executor_watcher.executors.append(executor.submit(pour_ingredients, ingredients, single_or_double, pump_config, executor_watcher))
 
     return executor_watcher
