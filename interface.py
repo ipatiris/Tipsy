@@ -2,7 +2,7 @@
 import pygame
 
 from settings import *
-from helpers import get_cocktail_image_path, get_valid_cocktails
+from helpers import get_cocktail_image_path, get_valid_cocktails, wrap_text
 from controller import make_drink
 
 import logging
@@ -19,7 +19,7 @@ cocktail_image_offset = screen_width * (1.0 - COCKTAIL_IMAGE_SCALE) // 2
 pygame.display.set_caption('Cocktail Swipe')
 
 normal_text_size = 72
-small_text_size = int(normal_text_size // 1.5)
+small_text_size = int(normal_text_size * 0.6)
 text_position = (screen_width // 2, int(screen_height * 0.85))
 
 def add_layer(*args, function=screen.blit, key=None):
@@ -129,7 +129,7 @@ def show_pouring_and_loading(watcher):
         pouring_img = None
     try:
         loading_img = pygame.image.load('loading.png')
-        loading_img = pygame.transform.scale(loading_img, (100, 100))
+        loading_img = pygame.transform.scale(loading_img, (70, 70))
     except Exception as e:
         logger.exception('Error loading loading.png')
         loading_img = None
@@ -149,33 +149,45 @@ def show_pouring_and_loading(watcher):
         add_layer(pouring_img, (0, -150), key='pouring')
 
     pour_layers = []
+    pouring_line = 0
     while not watcher.done():
-        angle = (angle + 5) % 360
+        angle = (angle - 5) % 360
         if loading_img:
             rotated_loading = pygame.transform.rotate(loading_img, angle)
         
         for index, pour in enumerate(watcher.pours):
             layer_key = f'pour_{index}'
             logo_layer_key = f'{layer_key}_logo'
+            
+            x_position = screen_width // 3
+            y_position = (text_position[1] + small_text_size * pouring_line) - 325
 
-            x_position = text_position[0] - 100
-            y_position = (text_position[1] + small_text_size * index) - 325
-
-            if layer_key not in pour_layers:
-                pour_layers.append(layer_key)
-                
+            if logo_layer_key not in pour_layers:
                 font = pygame.font.SysFont(None, small_text_size)
-                text_surface = font.render(str(pour), True, (255, 255, 255))
-                
-                text_rect = text_surface.get_rect(topleft=(x_position, y_position))
-                add_layer(text_surface, text_rect, key=layer_key)
+                for layer_index, line in enumerate(wrap_text(str(pour), font, screen_width * 0.5)):
+                    line_key = f'{layer_key}_{layer_index}'
+                    text_surface = font.render(line, True, (255, 255, 255))
+                    line_y_position = y_position + small_text_size * layer_index
+                    if layer_index > 0:
+                        line_y_position = line_y_position - 10 * layer_index
+                    text_rect = text_surface.get_rect(topleft=(x_position, line_y_position))
+                    pour_layers.append(line_key)
+                    add_layer(text_surface, text_rect, key=line_key)
+                    pouring_line += 1
                 pour_layers.append(logo_layer_key)
+
+            status_position = layers.get(logo_layer_key, {}).get('args', [None, None])[1]
+            if status_position:
+                status_position = status_position.center
+            else:
+                status_position = (x_position - small_text_size // 2, y_position - 7 + small_text_size // 2)
+
             if pour.running and loading_img:
-                rect = rotated_loading.get_rect(center=(x_position - small_text_size // 2, y_position - 7 + small_text_size // 2))
+                rect = rotated_loading.get_rect(center=status_position)
                 add_layer(rotated_loading, rect, key=logo_layer_key)
             else:
                 if checkmark_img:
-                    rect = checkmark_img.get_rect(center=(x_position - small_text_size // 2, y_position - 7 + small_text_size // 2))
+                    rect = checkmark_img.get_rect(center=status_position)
                     add_layer(checkmark_img, rect, key=logo_layer_key)
                 else:
                     remove_layer(logo_layer_key)
